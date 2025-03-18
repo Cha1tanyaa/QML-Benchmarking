@@ -15,9 +15,8 @@
 """Module containing models to be used in benchmarks."""
 
 from qml_benchmarks.models.circuit_centric import CircuitCentricClassifier
-from qml_benchmarks.models.convolutional_neural_network import (
-    ConvolutionalNeuralNetwork,
-)
+from qml_benchmarks.models.convolutional_neural_network import ConvolutionalNeuralNetwork
+
 from qml_benchmarks.models.data_reuploading import (
     DataReuploadingClassifier,
     DataReuploadingClassifierNoScaling,
@@ -52,6 +51,10 @@ from qml_benchmarks.models.weinet import WeiNet
 from sklearn.svm import SVC as SVC_base
 from sklearn.neural_network import MLPClassifier as MLP
 
+from qml_benchmarks.models.my_model import my_model
+from qml_benchmarks.models.my_model2 import my_model2
+from qml_benchmarks.models.my_model3 import my_model3
+from qml_benchmarks.models.my_model4 import my_model4
 __all__ = [
     "CircuitCentricClassifier",
     "ConvolutionalNeuralNetwork",
@@ -65,6 +68,10 @@ __all__ = [
     "DressedQuantumCircuitClassifierSeparable",
     "IQPKernelClassifier",
     "IQPVariationalClassifier",
+    "my_model",
+    "my_model2",
+    "my_model3",
+    "my_model4",
     "ProjectedQuantumKernel",
     "QuantumBoltzmannMachine",
     "QuantumBoltzmannMachineSeparable",

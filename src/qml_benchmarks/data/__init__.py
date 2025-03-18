@@ -15,6 +15,7 @@
 """Module containing data generating functions for classification tasks."""
 
 from qml_benchmarks.data.bars_and_stripes import generate_bars_and_stripes
+from qml_benchmarks.data.bars_and_stripes import generate_bars_and_stripes
 from qml_benchmarks.data.hidden_manifold import generate_hidden_manifold_model
 from qml_benchmarks.data.hyperplanes import generate_hyperplanes_parity
 from qml_benchmarks.data.linearly_separable import generate_linearly_separable
