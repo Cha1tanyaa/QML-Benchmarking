@@ -22,7 +22,7 @@ MNIST train/test split.
 
 import torchvision
 import torchvision.transforms as transforms
-from keras.datasets import mnist
+import tensorflow as tf
 from random import choices
 import numpy as np
 from sklearn.decomposition import PCA
@@ -81,7 +81,7 @@ def generate_mnist(
 
     if preprocessing in ["pca", "pca-"]:
 
-        (X_train_original, y_train), (X_test_original, y_test) = mnist.load_data()
+        (X_train_original, y_train), (X_test_original, y_test) = tf.keras.datasets.mnist.load_data()
 
         # subselect a binary classification task
         pick_train = [i for i, y in enumerate(y_train) if (y == digitA or y == digitB)]
