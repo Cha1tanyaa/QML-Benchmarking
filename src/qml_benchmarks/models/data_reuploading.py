@@ -26,6 +26,22 @@ from qml_benchmarks.model_utils import chunk_vmapped_fn
 
 jax.config.update("jax_enable_x64", True)
 
+def broadcast_CZ(wires, pattern):
+    """Apply CZ gates between wires based on the chosen pattern."""
+    wires = list(wires)
+    if pattern == "double":
+        # Apply CZ between every distinct pair of wires.
+        for i in range(len(wires)):
+            for j in range(i + 1, len(wires)):
+                qml.CZ(wires=[wires[i], wires[j]])
+    elif pattern == "double_odd":
+        # Apply CZ only on odd-indexed wires.
+        odd_wires = wires[1::2]
+        for i in range(len(odd_wires)):
+            for j in range(i + 1, len(odd_wires)):
+                qml.CZ(wires=[odd_wires[i], odd_wires[j]])
+    else:
+        raise ValueError(f"Unknown broadcast pattern: {pattern}")
 
 class DataReuploadingClassifier(BaseEstimator, ClassifierMixin):
     def __init__(
@@ -150,9 +166,9 @@ class DataReuploadingClassifier(BaseEstimator, ClassifierMixin):
 
                     x_idx += 3
                 if layer % 2 == 0:
-                    qml.broadcast(qml.CZ, range(self.n_qubits_), pattern="double")
+                    broadcast_CZ(range(self.n_qubits_), pattern="double")
                 else:
-                    qml.broadcast(qml.CZ, range(self.n_qubits_), pattern="double_odd")
+                    broadcast_CZ(range(self.n_qubits_), pattern="double_odd")
 
             # final reupload without CZs
             x_idx = 0
@@ -351,9 +367,9 @@ class DataReuploadingClassifierNoScaling(DataReuploadingClassifier):
                     qml.Rot(*angles, wires=i)
                     x_idx += 3
                 if layer % 2 == 0:
-                    qml.broadcast(qml.CZ, range(self.n_qubits_), pattern="double")
+                    broadcast_CZ(range(self.n_qubits_), pattern="double")
                 else:
-                    qml.broadcast(qml.CZ, range(self.n_qubits_), pattern="double_odd")
+                    broadcast_CZ(range(self.n_qubits_), pattern="double_odd")
 
             # final reupload without CZs
             x_idx = 0
@@ -433,9 +449,9 @@ class DataReuploadingClassifierNoTrainableEmbedding(DataReuploadingClassifier):
                     qml.Rot(*angles, wires=i)
                     x_idx += 3
                 if layer % 2 == 0:
-                    qml.broadcast(qml.CZ, range(self.n_qubits_), pattern="double")
+                    broadcast_CZ(range(self.n_qubits_), pattern="double")
                 else:
-                    qml.broadcast(qml.CZ, range(self.n_qubits_), pattern="double_odd")
+                    broadcast_CZ(range(self.n_qubits_), pattern="double_odd")
 
                 # final reupload without CZs
             x_idx = 0

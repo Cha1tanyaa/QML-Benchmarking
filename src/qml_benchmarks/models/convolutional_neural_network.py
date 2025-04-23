@@ -236,11 +236,15 @@ class ConvolutionalNeuralNetwork(BaseEstimator, ClassifierMixin):
             self.scaler = StandardScaler()
             self.scaler.fit(X)
 
+        # Replace any zero standard deviations to avoid division by zero.
+        safe_scale = np.where(self.scaler.scale_ == 0, 1, self.scaler.scale_)
+
         X = self.scaler.transform(X) * self.scaling
 
-        # reshape data to square array
-        X = jnp.array(X)
-        height = int(jnp.sqrt(X.shape[1]))
-        X = jnp.reshape(X, (X.shape[0], height, height, 1))
-
-        return X
+        # Convert to jax array and reshape (assumes number of features is a perfect square)
+        X_scaled = jnp.array(X_scaled)
+        height = int(jnp.sqrt(X_scaled.shape[1]))
+        if height * height != X_scaled.shape[1]:
+            raise ValueError("The number of features is not a perfect square.")
+        X_scaled = jnp.reshape(X_scaled, (X_scaled.shape[0], height, height, 1))
+        return X_scaled

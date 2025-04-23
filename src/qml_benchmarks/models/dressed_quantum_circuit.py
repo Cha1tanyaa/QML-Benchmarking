@@ -117,7 +117,9 @@ class DressedQuantumCircuitClassifier(BaseEstimator, ClassifierMixin):
             for layer in range(self.n_layers):
                 for i in range(self.n_qubits_):
                     qml.RY(params["circuit_weights"][layer, i], wires=i)
-                qml.broadcast(qml.CNOT, wires=range(self.n_qubits_), pattern="ring")
+                for i in range(self.n_qubits_):
+                    j = (i+1) % self.n_qubits_
+                    qml.CZ(wires=[i, j])
 
             return [qml.expval(qml.PauliZ(wires=i)) for i in range(self.n_qubits_)]
 
