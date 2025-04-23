@@ -22,7 +22,7 @@ def construct_lstm(hidden_size, num_layers=1):
             return output
     return LSTMModel()
 
-class my_model3(BaseEstimator, ClassifierMixin):
+class my_model3(BaseEstimator, ClassifierMixin): #LSTM classifier
     def __init__(
         self,
         hidden_size=128,
@@ -87,7 +87,12 @@ class my_model3(BaseEstimator, ClassifierMixin):
         X = jnp.array(X_scaled)
 
         def loss_fn(params, X, y):
-            logits = self.forward.apply(params, X)[:, 0]
+            out = self.forward.apply(params, X)
+            out = jnp.atleast_1d(out)
+            if out.ndim > 1:
+                logits = out.squeeze(axis=-1)
+            else:
+                logits = out
             y_positive = jax.nn.relu(y)
             loss = jnp.mean(optax.sigmoid_binary_cross_entropy(logits, y_positive))
             return loss

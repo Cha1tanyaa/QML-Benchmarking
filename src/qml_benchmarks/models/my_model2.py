@@ -3,7 +3,7 @@ import numpy as np
 from sklearn.preprocessing import StandardScaler
 from sklearn.base import BaseEstimator, ClassifierMixin
 
-class my_model2(BaseEstimator, ClassifierMixin):
+class my_model2(BaseEstimator, ClassifierMixin): #XGBoost classifier
     def __init__(
         self,
         max_depth=6,

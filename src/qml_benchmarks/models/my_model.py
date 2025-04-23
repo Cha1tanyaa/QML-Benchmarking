@@ -23,7 +23,7 @@ def construct_ffn(hidden_layers):
     return FeedforwardNN()
    
 
-class my_model(BaseEstimator, ClassifierMixin):
+class my_model(BaseEstimator, ClassifierMixin): #Feedforward neural network
     def __init__(
         self,
         hidden_layers=[128, 64],
