@@ -51,10 +51,10 @@ from qml_benchmarks.models.weinet import WeiNet
 from sklearn.svm import SVC as SVC_base
 from sklearn.neural_network import MLPClassifier as MLP
 
-from qml_benchmarks.models.my_model import my_model
-from qml_benchmarks.models.my_model2 import my_model2
-from qml_benchmarks.models.my_model3 import my_model3
-from qml_benchmarks.models.my_model4 import my_model4
+from qml_benchmarks.models.qlstm import QLSTM
+from qml_benchmarks.models.lstm import LSTM
+from qml_benchmarks.models.mlp import MLP
+from qml_benchmarks.models.xgboost import XGBoost
 __all__ = [
     "CircuitCentricClassifier",
     "ConvolutionalNeuralNetwork",
@@ -68,10 +68,10 @@ __all__ = [
     "DressedQuantumCircuitClassifierSeparable",
     "IQPKernelClassifier",
     "IQPVariationalClassifier",
-    "my_model",
-    "my_model2",
-    "my_model3",
-    "my_model4",
+    "QLSTM",
+    "LSTM",
+    "MLP",
+    "XGBoost",
     "ProjectedQuantumKernel",
     "QuantumBoltzmannMachine",
     "QuantumBoltzmannMachineSeparable",

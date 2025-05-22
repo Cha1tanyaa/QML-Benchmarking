@@ -44,7 +44,7 @@ def construct_qlstm(hidden_size, seq_length):
             return output
     return QLSTMModel()
 
-class my_model4(BaseEstimator, ClassifierMixin): #Quantum LSTM classifier
+class QLSTM(BaseEstimator, ClassifierMixin): #Quantum LSTM classifier
     def __init__(
         self,
         hidden_size=128,
