@@ -1,23 +1,26 @@
 import os
 import sys
+from pathlib import Path
 import numpy as np
 import pandas as pd
 from importlib import import_module
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+root = Path(__file__).resolve().parents[1]
+src  = root / "src"
+sys.path.insert(0, str(src))
 
 # Import dataset generators from the data package
-from data.financial_times import generate_stock_features_and_labels
-from data.bars_and_stripes import generate_bars_and_stripes
-from data.hidden_manifold import generate_hidden_manifold_model
-from data.hyperplanes import generate_hyperplanes_parity
-from data.linearly_separable import generate_linearly_separable
-from data.two_curves import generate_two_curves
+from qml_benchmarks.data.financial_times import generate_stock_features_and_labels
+from qml_benchmarks.data.bars_and_stripes import generate_bars_and_stripes
+from qml_benchmarks.data.hidden_manifold import generate_hidden_manifold_model
+from qml_benchmarks.data.hyperplanes import generate_hyperplanes_parity
+from qml_benchmarks.data.linearly_separable import generate_linearly_separable
+from qml_benchmarks.data.two_curves import generate_two_curves
 
 # Import all models from the models package
-import models as models
+import qml_benchmarks.models as models
 
 def get_models_list():
     """
