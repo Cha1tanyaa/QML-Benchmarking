@@ -16,6 +16,12 @@
 
 import numpy as np
 import sys
+from pathlib import Path
+
+root = Path(__file__).resolve().parents[1]
+src = root / "src"
+sys.path.insert(0, str(src))
+
 import os
 import time
 import argparse
@@ -97,7 +103,7 @@ if __name__ == "__main__":
         msg += "\nA classifier from qml.benchmarks.model and dataset path are required. E.g., \n \n"
         msg += "python run_hyperparameter_search \ \n--classifier DataReuploadingClassifier \ \n--dataset-path train.csv\n"
         msg += "\nCheck all arguments for the script with \n"
-        msg += "python run_hyperparameter_search --help\n"
+        msg += "python python run_hyperparameter_search.py --help\n"
         msg += "================================================================================"
         raise ValueError(msg)
     

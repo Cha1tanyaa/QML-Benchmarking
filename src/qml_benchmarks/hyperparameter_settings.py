@@ -191,4 +191,26 @@ hyper_parameter_settings = {
         "alpha": {"type": "list", "dtype": "float", "val": [0.01, 0.001, 0.0001]},
     },
     "Perceptron": {"eta0": {"type": "list", "dtype": "float", "val": [0.1, 1, 10]}},
+    "MLP": {
+        "batch_size": {
+            "type": "list",
+            "dtype": "int",
+            "val": [32]
+        },
+        "learning_rate_init": {
+            "type": "list",
+            "dtype": "float",
+            "val": [0.001, 0.01, 0.1]
+        },
+        "hidden_layer_sizes": {
+            "type": "list",
+            "dtype": "tuple",
+            "val": ["(100,)", "(50, 50)", "(100, 50, 25)"]
+        },
+        "alpha": {
+            "type": "list",
+            "dtype": "float",
+            "val": [0.01, 0.001, 0.0001]
+        }
+    },
 }
