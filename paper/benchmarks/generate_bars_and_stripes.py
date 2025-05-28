@@ -15,6 +15,13 @@
 """Generate datasets for the BARS & STRIPES benchmark."""
 
 import os
+import sys
+from pathlib import Path
+
+project_root = Path(__file__).resolve().parents[2]
+src_path = project_root / "src"
+sys.path.insert(0, str(src_path))
+
 import numpy as np
 from qml_benchmarks.data import generate_bars_and_stripes
 
