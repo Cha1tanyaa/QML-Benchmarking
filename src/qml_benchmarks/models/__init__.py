@@ -55,6 +55,7 @@ from qml_benchmarks.models.qlstm import QLSTM
 from qml_benchmarks.models.lstm import LSTM
 from qml_benchmarks.models.mlp import MLP
 from qml_benchmarks.models.xgboost import XGBoost
+from qml_benchmarks.models.svm import SVM
 __all__ = [
     "CircuitCentricClassifier",
     "ConvolutionalNeuralNetwork",
@@ -72,6 +73,7 @@ __all__ = [
     "LSTM",
     "MLP",
     "XGBoost",
+    "SVM",
     "ProjectedQuantumKernel",
     "QuantumBoltzmannMachine",
     "QuantumBoltzmannMachineSeparable",
