@@ -4,11 +4,10 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "qml_benchmarks"
-version = "0.1"
 description = "A package to benchmark quantum machine learning models"
-authors = [{name = "QML Team XanaduAI"}]
+authors = [{name = "Cha1tanyaa, QML Team XanaduAI"}]
 classifiers = [
-    "Development Status :: 1 - Planning",
+    "Development Status :: 3 - Extending",
     "Programming Language :: Python :: 3",
     "Operating System :: OS Independent",
 ]
