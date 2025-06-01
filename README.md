@@ -13,11 +13,12 @@ Version 0.1 of the code can be used to reproduce the results in the study
 ## Overview
 
 A short summary of the various folders in this repository is as follows:
-- `paper`: contains code and results to reproduce the results in the paper
+- `paper`: contains code and results to reproduce the results in the paper provided by XANDU 
   - `benchmarks`: scripts that generate datasets of varied difficulty and feature dimensions
   - `plots`: scripts that generate the plots and additional experiments in the paper
   - `results`: data files recording the results of the benchmark experiments that the study is based on
-- `scripts`: example code for how to benchmark a model on a dataset
+- `results`: contains the results of the extended research from the paper
+- `scripts`: example code for how to benchmark a model on a dataset with added automated pipelines
 - `src/qml_benchmarks`: a simple Python package defining quantum and classical models, 
    as well as data generating functions
 
