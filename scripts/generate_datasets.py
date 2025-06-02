@@ -4,7 +4,6 @@ import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
 
-# Add project src folder to PYTHONPATH
 repo = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(repo / "src"))
 
@@ -105,6 +104,15 @@ DEFAULT_PARAMS = {
                 "random_state_offset": i
             }
             for i, n in enumerate(range(2, 21))
+        ],
+    },
+    "credit_card_fraud": {
+        "base_filename_prefix": "credit_card_fraud",
+        "configurations": [
+            {
+                "split_test_size": 0.2,
+                "random_state_offset": 0
+            }
         ],
     },
 }
@@ -258,15 +266,50 @@ class generate_datasets:
 
             n_tot = cfg["n_samples_total"]
             params = {**cfg["iter_params"], **cfg["static_params"]}
-            X, y = gen_fn(n_tot, **params)
-            X_tr, X_te, y_tr, y_te = train_test_split(X, y, test_size=0.2, random_state=seed)
+            X, y = gen_fn(n_samples=n_tot, **params)
+            X_tr, X_te, y_tr, y_te = train_test_split(X, y, test_size=0.2, random_state=seed, stratify=y)
 
-            suffix = "_".join(f"{k}{params[k]}" for k in cfg["filename_identifier_params"])
-            ft = subdir / f"twocurves_{suffix}_train.csv"
-            fs = subdir / f"twocurves_{suffix}_test.csv"
+            suffix_parts = []
+            for k_param in cfg["filename_identifier_params"]:
+                value = params[k_param]
+                suffix_parts.append(f"{k_param}{str(value).replace('.', 'p')}")
+            suffix = "_".join(suffix_parts)
+            
+            ft = subdir / f"{self.params[grp]['base_filename_prefix']}_{suffix}_train.csv"
+            fs = subdir / f"{self.params[grp]['base_filename_prefix']}_{suffix}_test.csv"
 
             np.savetxt(ft, np.c_[X_tr, y_tr], delimiter=",")
             np.savetxt(fs, np.c_[X_te, y_te], delimiter=",")
+
+
+    def credit_card_fraud(self):
+        grp = "credit_card_fraud"
+        cfgs = self.params[grp]["configurations"]
+        local_csv_path = repo / "results" / "datasets" / "creditcard.csv" 
+        
+        if not local_csv_path.exists():
+            print(f"ERROR: Source credit card fraud dataset not found at {local_csv_path}")
+            return
+
+        gen_fn = lambda: data_module.generate_credit_card_fraud_features_and_labels(file_path=local_csv_path)
+        subdir = self.outdir / self.params[grp]["base_filename_prefix"]
+        subdir.mkdir(exist_ok=True)
+
+        for cfg in cfgs:
+            seed = self.base_seed + cfg.get("random_state_offset", 0)
+            np.random.seed(seed)
+            X, y = gen_fn()
+            test_size = cfg.get("split_test_size", 0.2)
+            X_tr, X_te, y_tr, y_te = train_test_split(X, y, test_size=test_size, random_state=seed, stratify=y)
+            
+            ft_name = f"{self.params[grp]['base_filename_prefix']}_train.csv"
+            fs_name = f"{self.params[grp]['base_filename_prefix']}_test.csv"
+            
+            ft = subdir / ft_name
+            fs = subdir / fs_name
+
+            pd.DataFrame(np.c_[X_tr, y_tr]).to_csv(ft, index=False, header=False)
+            pd.DataFrame(np.c_[X_te, y_te]).to_csv(fs, index=False, header=False)
 
 
 def main(outdir: Path, params: dict = DEFAULT_PARAMS):
