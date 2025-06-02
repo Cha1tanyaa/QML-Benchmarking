@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
 
-repo = Path(__file__).resolve().parents[1]
+repo = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(repo / "src"))
 
 import qml_benchmarks.data as data_module
@@ -285,7 +285,7 @@ class generate_datasets:
     def credit_card_fraud(self):
         grp = "credit_card_fraud"
         cfgs = self.params[grp]["configurations"]
-        local_csv_path = repo / "results" / "datasets" / "creditcard.csv" 
+        local_csv_path = repo / "paper_extension" / "datasets" / "creditcard.csv" 
         
         if not local_csv_path.exists():
             print(f"ERROR: Source credit card fraud dataset not found at {local_csv_path}")
@@ -321,5 +321,5 @@ def main(outdir: Path, params: dict = DEFAULT_PARAMS):
 
 if __name__ == "__main__":
     root_dir = Path(__file__).resolve().parents[1]
-    outdir = root_dir / "results" / "datasets_generated"
+    outdir = root_dir / "datasets_generated"
     main(outdir)
