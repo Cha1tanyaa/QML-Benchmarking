@@ -1,8 +1,8 @@
 import sys
 from pathlib import Path
 
-root = Path(__file__).resolve().parents[1]  
-src  = root / "src"
+root = Path(__file__).resolve().parents[2]  
+src  = root / "src" 
 sys.path.insert(0, str(src))
 
 import numpy as np
@@ -10,7 +10,6 @@ from sklearn.datasets import make_classification
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report, confusion_matrix
 
-from qml_benchmarks.data import financial_times
 from qml_benchmarks.models.mlp import MLP
 from qml_benchmarks.models.xgboost import XGBoost
 #from qml_benchmarks.models.convolutional_neural_network import ConvolutionalNeuralNetwork
