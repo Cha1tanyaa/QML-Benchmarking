@@ -20,3 +20,4 @@ from qml_benchmarks.data.hyperplanes import generate_hyperplanes_parity
 from qml_benchmarks.data.linearly_separable import generate_linearly_separable
 from qml_benchmarks.data.two_curves import generate_two_curves
 from qml_benchmarks.data.financial_times import generate_stock_features_and_labels
+from qml_benchmarks.data.credit_card_fraud import generate_credit_card_fraud_features_and_labels
