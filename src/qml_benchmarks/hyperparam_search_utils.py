@@ -29,8 +29,8 @@ def read_data(path):
         path (str): path to data
     """
     # The data is stored on a CSV file with the last column being the label
-    data = pd.read_csv(path, header=None)
-    X = data.iloc[:, :-1].values
+    data = pd.read_csv(path, header=0, low_memory=False)
+    X = data.iloc[:, :-1].astype(float).values
     y = data.iloc[:, -1].values
     return X, y
 
