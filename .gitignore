@@ -12,8 +12,8 @@ paper/benchmarks/mnist_pca-
 paper/benchmarks/mnist_cg
 paper/benchmarks/two_curves
 paper/benchmarks/two_curves_diff
-results/datasets_generated/
-results/datasets/
+paper_extension/datasets_generated/
+paper_extension/datasets/
 
 # VSCode files should not be tracked
 .vscode/
