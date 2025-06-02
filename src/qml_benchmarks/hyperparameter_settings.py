@@ -175,7 +175,7 @@ hyper_parameter_settings = {
         "gamma": {"type": "list", "dtype": "float", "val": [0.001, 0.01, 0.1, 1]},
         "C": {"type": "list", "dtype": "float", "val": [0.1, 1, 10, 100]},
     },
-    "SVClinear": {"C": {"type": "list", "dtype": "float", "val": [0.1, 1, 10, 100]}},
+    "SVM": {"C": {"type": "list", "dtype": "float", "val": [0.1, 1, 10, 100]}},
     "MLP": {
         "batch_size": {
             "type": "list",
