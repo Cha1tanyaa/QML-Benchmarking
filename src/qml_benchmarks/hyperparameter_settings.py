@@ -204,6 +204,11 @@ hyper_parameter_settings = {
             "type": "list",
             "dtype": "str",
             "val": ["relu", "tanh"]
+        },
+        "max_steps": {
+            "type": "list",
+            "dtype": "int",
+            "val": [2000, 5000, 10000]
         }
     },
     "LSTM": {

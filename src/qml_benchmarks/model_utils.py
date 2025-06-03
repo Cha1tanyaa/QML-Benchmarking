@@ -22,6 +22,7 @@ import numpy as np
 import optax
 import jax
 import jax.numpy as jnp
+import warnings
 from sklearn.exceptions import ConvergenceWarning
 from sklearn.utils import gen_batches
 
@@ -117,8 +118,9 @@ def train(
 
     if not converged:
         print("Loss did not converge:", loss_history)
-        raise ConvergenceWarning(
-            f"Model {model.__class__.__name__} has not converged after the maximum number of {model.max_steps} steps."
+        warnings.warn(
+            f"Model {model.__class__.__name__} has not converged after the maximum number of {model.max_steps} steps.",
+            ConvergenceWarning
         )
 
     return params
