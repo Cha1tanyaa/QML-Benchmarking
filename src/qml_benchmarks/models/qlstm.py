@@ -24,7 +24,7 @@ class QLSTMCell(nn.Module):
 
     @nn.compact
     def __call__(self, carry, x):
-        lstm_cell = nn.LSTMCell()
+        lstm_cell = nn.LSTMCell(features=self.hidden_size)
         new_carry, y = lstm_cell(carry, x)
         qlayer = QuantumLayer(hidden_dim=self.hidden_size)
         new_hidden = qlayer(new_carry[1])
@@ -35,8 +35,10 @@ def construct_qlstm(hidden_size, seq_length):
     class QLSTMModel(nn.Module):
         @nn.compact
         def __call__(self, x):
-            batch_size, seq_length, _ = x.shape
-            carry = nn.LSTMCell.initialize_carry(jax.random.PRNGKey(0), (batch_size,), hidden_size)
+            batch_size, seq_length, feature_dim = x.shape
+            h0 = jnp.zeros((batch_size, hidden_size), dtype=x.dtype)
+            c0 = jnp.zeros((batch_size, hidden_size), dtype=x.dtype)
+            carry = (h0, c0)
             qlstm_cell = QLSTMCell(hidden_size=hidden_size)
             for t in range(seq_length):
                 carry, _ = qlstm_cell(carry, x[:, t, :])
@@ -96,6 +98,8 @@ class QLSTM(BaseEstimator, ClassifierMixin): #Quantum LSTM classifier
         self.params_ = self.qlstm.init(self.generate_key(), X)
 
     def fit(self, X, y):
+        if X.ndim == 2:
+            X = X[:, None, :]
         n_features = X.shape[-1]
         self.initialize(n_features, classes=np.unique(y))
         y = jnp.array(y, dtype=int)

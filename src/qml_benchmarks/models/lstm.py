@@ -13,9 +13,11 @@ def construct_lstm(hidden_size, num_layers=1):
     class LSTMModel(nn.Module):
         @nn.compact
         def __call__(self, x):
-            batch_size, seq_length, _ = x.shape
-            carry = nn.LSTMCell.initialize_carry(jax.random.PRNGKey(0), (batch_size,), hidden_size)
-            lstm_cell = nn.LSTMCell()
+            batch_size, seq_length, feature_dim = x.shape
+            h0 = jnp.zeros((batch_size, hidden_size), dtype=x.dtype)
+            c0 = jnp.zeros((batch_size, hidden_size), dtype=x.dtype)
+            carry = (h0, c0)
+            lstm_cell = nn.LSTMCell(features=hidden_size)
             for t in range(seq_length):
                 carry, _ = lstm_cell(carry, x[:, t, :])
             output = nn.Dense(features=1)(carry[1])
@@ -75,6 +77,8 @@ class LSTM(BaseEstimator, ClassifierMixin): #LSTM classifier
         self.params_ = self.lstm.init(self.generate_key(), X)
 
     def fit(self, X, y):
+        if X.ndim == 2:
+            X = X[:, None, :]
         n_features = X.shape[-1]
         self.initialize(n_features, classes=np.unique(y))
         y = jnp.array(y, dtype=int)
