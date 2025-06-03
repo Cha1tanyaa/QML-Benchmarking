@@ -30,12 +30,12 @@ DEFAULT_PARAMS = {
             {
                 "iter_params": {"width": size, "height": size},
                 "static_params": {"noise_std": 0.5},
-                "n_samples_train": 1000,
-                "n_samples_test": 200,
+                "n_samples_train": 500,
+                "n_samples_test": 100,
                 "filename_identifier_params": ["width"],
                 "random_state_offset": i
             }
-            for i, size in enumerate([4, 8, 16, 32])
+            for i, size in enumerate([8, 32])
         ],
     },
     "linearly_separable": {
@@ -45,11 +45,11 @@ DEFAULT_PARAMS = {
             {
                 "iter_params": {"n_features": n, "margin": round(0.02 * n, 3)},
                 "static_params": {},
-                "n_samples_total": 300,
+                "n_samples_total": 150,
                 "filename_identifier_params": ["n_features", "margin"],
                 "random_state_offset": i
             }
-            for i, n in enumerate(range(2, 21))
+            for i, n in enumerate([2, 5, 10, 20])
         ],
     },
     "hidden_manifold_model": {
@@ -59,11 +59,11 @@ DEFAULT_PARAMS = {
             {
                 "iter_params": {"n_features": n},
                 "static_params": {"manifold_dimension": 6},
-                "n_samples_total": 300,
+                "n_samples_total": 150,
                 "filename_identifier_params": ["n_features", "manifold_dimension"],
                 "random_state_offset": i
             }
-            for i, n in enumerate(range(2, 21))
+            for i, n in enumerate([2, 5, 10, 20])
         ],
     },
     "hyperplanes_parity": {
@@ -73,11 +73,11 @@ DEFAULT_PARAMS = {
             {
                 "iter_params": {"n_hyperplanes": h},
                 "static_params": {"n_features": 10, "dim_hyperplanes": 3},
-                "n_samples_total": 300,
+                "n_samples_total": 150,
                 "filename_identifier_params": ["n_features", "dim_hyperplanes", "n_hyperplanes"],
                 "random_state_offset": i
             }
-            for i, h in enumerate(range(2, 21))
+            for i, h in enumerate([2, 5, 10, 20])
         ],
     },
     "stock_features": {
@@ -99,11 +99,11 @@ DEFAULT_PARAMS = {
             {
                 "iter_params": {"n_features": n},
                 "static_params": {"degree": 5, "offset": 0.1, "noise": 0.01},
-                "n_samples_total": 300,
+                "n_samples_total": 150,
                 "filename_identifier_params": ["n_features", "degree", "offset", "noise"],
                 "random_state_offset": i
             }
-            for i, n in enumerate(range(2, 21))
+            for i, n in enumerate([2, 5, 10, 20])
         ],
     },
     "credit_card_fraud": {
