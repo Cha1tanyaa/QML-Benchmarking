@@ -9,14 +9,25 @@ from qml_benchmarks.model_utils import train
 
 jax.config.update("jax_enable_x64", True)
 
-def construct_ffn(hidden_layers):
-    class FeedforwardNN(nn.Module):
+def get_activation_function(name: str):
+    if name == "relu":
+        return nn.relu
+    elif name == "tanh":
+        return nn.tanh
+    elif name == "sigmoid":
+        return nn.sigmoid
+    else:
+        raise ValueError(f"Unsupported activation function: '{name}'")
 
+def construct_ffn(hidden_layers, activation_name: str):
+    selected_activation_fn = get_activation_function(activation_name)
+
+    class FeedforwardNN(nn.Module):
         @nn.compact
         def __call__(self, x):
             for size in hidden_layers:
                 x = nn.Dense(features=size)(x)
-                x = nn.relu(x)
+                x = selected_activation_fn(x)
             x = nn.Dense(features=1)(x)  # Single output neuron
             return x
 
@@ -26,18 +37,22 @@ def construct_ffn(hidden_layers):
 class MLP(BaseEstimator, ClassifierMixin): #Feedforward neural network
     def __init__(
         self,
-        hidden_layers=[128, 64],
-        learning_rate=0.001,
+        hidden_layer_sizes=[128, 64],
+        activation="relu",
+        learning_rate=0.01,
+        alpha=0.001,
         convergence_interval=200,
-        max_steps=10000,
+        max_steps=2000,
         batch_size=32,
         max_vmap=None,
         jit=True,
         random_state=42,
         scaling=1.0,
     ):
-        self.hidden_layers = hidden_layers
+        self.hidden_layer_sizes = hidden_layer_sizes
+        self.activation = activation
         self.learning_rate = learning_rate
+        self.alpha = alpha
         self.max_steps = max_steps
         self.scaling = scaling
         self.jit = jit
@@ -66,7 +81,8 @@ class MLP(BaseEstimator, ClassifierMixin): #Feedforward neural network
         assert self.n_classes_ == 2
         assert 1 in self.classes_ and -1 in self.classes_
 
-        self.ffn = construct_ffn(self.hidden_layers)
+        # MODIFIED: Pass self.activation to construct_ffn
+        self.ffn = construct_ffn(self.hidden_layer_sizes, self.activation)
         self.forward = self.ffn
 
         X0 = jnp.ones(shape=(1, n_features))
