@@ -10,12 +10,16 @@ class XGBoost(BaseEstimator, ClassifierMixin): #XGBoost classifier
         learning_rate=0.1,
         n_estimators=100,
         objective="binary:logistic",
+        subsample=1.0,
+        colsample_bytree=1.0,
         random_state=42,
         scaling=1.0,
     ):
         self.max_depth = max_depth
         self.learning_rate = learning_rate
         self.n_estimators = n_estimators
+        self.subsample = subsample
+        self.colsample_bytree = colsample_bytree
         self.objective = objective
         self.random_state = random_state
         self.scaling = scaling
@@ -39,6 +43,8 @@ class XGBoost(BaseEstimator, ClassifierMixin): #XGBoost classifier
             learning_rate=self.learning_rate,
             n_estimators=self.n_estimators,
             objective=self.objective,
+            subsample=self.subsample,
+            colsample_bytree=self.colsample_bytree,
             random_state=self.random_state,
         )
         self.model.fit(X, y)
