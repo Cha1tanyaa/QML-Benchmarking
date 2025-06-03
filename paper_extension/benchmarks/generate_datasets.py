@@ -286,10 +286,6 @@ class generate_datasets:
         grp = "credit_card_fraud"
         cfgs = self.params[grp]["configurations"]
         local_csv_path = repo / "paper_extension" / "datasets" / "creditcard.csv" 
-        
-        if not local_csv_path.exists():
-            print(f"ERROR: Source credit card fraud dataset not found at {local_csv_path}")
-            return
 
         gen_fn = lambda: data_module.generate_credit_card_fraud_features_and_labels(file_path=local_csv_path)
         subdir = self.outdir / self.params[grp]["base_filename_prefix"]
