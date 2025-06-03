@@ -175,7 +175,10 @@ hyper_parameter_settings = {
         "gamma": {"type": "list", "dtype": "float", "val": [0.001, 0.01, 0.1, 1]},
         "C": {"type": "list", "dtype": "float", "val": [0.1, 1, 10, 100]},
     },
-    "SVM": {"C": {"type": "list", "dtype": "float", "val": [0.1, 1, 10, 100]}},
+    "SVM": {
+        "learning_rate": {"type": "list", "dtype": "float", "val": [0.001, 0.01, 0.1, 1.0]},
+        "batch_size": {"type": "list", "dtype": "int", "val": [32, 64]},
+    },
     "MLP": {
         "batch_size": {
             "type": "list",
@@ -206,15 +209,12 @@ hyper_parameter_settings = {
     "LSTM": {
         "batch_size": {"type": "list", "dtype": "int", "val": [32, 64]},
         "learning_rate": {"type": "list", "dtype": "float", "val": [0.001, 0.01]},
-        "hidden_units": {"type": "list", "dtype": "int", "val": [50, 100]},
-        "n_layers": {"type": "list", "dtype": "int", "val": [1, 2]},
+        "hidden_size": {"type": "list", "dtype": "int", "val": [50, 100]},
     },
     "QLSTM": {
         "batch_size": {"type": "list", "dtype": "int", "val": [16, 32]},
         "learning_rate": {"type": "list", "dtype": "float", "val": [0.001, 0.01]},
-        "hidden_units": {"type": "list", "dtype": "int", "val": [10, 20]},
-        "n_qlayers": {"type": "list", "dtype": "int", "val": [1, 2]},
-        "n_vrotations": {"type": "list", "dtype": "int", "val": [1, 2]},
+        "hidden_size": {"type": "list", "dtype": "int", "val": [10, 20]},
     },
     "XGBoost": {
         "n_estimators": {"type": "list", "dtype": "int", "val": [100, 200, 300]},
