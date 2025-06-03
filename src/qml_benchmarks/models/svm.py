@@ -18,6 +18,7 @@ class SVM(BaseEstimator, ClassifierMixin):
         random_state=42,
         scaling=1.0,
         jit=True,
+        max_vmap=None,
     ):
         self.learning_rate = learning_rate
         self.batch_size = batch_size
@@ -27,6 +28,10 @@ class SVM(BaseEstimator, ClassifierMixin):
         self.scaling = scaling
         self.jit = jit
         self.rng = np.random.default_rng(random_state)
+        if max_vmap is None:
+            self.max_vmap = self.batch_size
+        else:
+            self.max_vmap = max_vmap
         # will be set in fit
         self.scaler_ = None
         self.params_ = None
@@ -62,7 +67,7 @@ class SVM(BaseEstimator, ClassifierMixin):
         # init model
         self.initialize_params()
         self.construct_model()
-        optimizer = optax.sgd(self.learning_rate)
+        optimizer = optax.sgd
 
         def loss_fn(params, Xb, yb):
             margins = yb * self.decision_function(params, Xb)
