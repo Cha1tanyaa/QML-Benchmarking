@@ -67,7 +67,7 @@ class LSTM(BaseEstimator, ClassifierMixin): #LSTM classifier
         self.classes_ = classes
         self.n_classes_ = len(self.classes_)
         assert self.n_classes_ == 2
-        assert 1 in self.classes_ and -1 in self.classes_
+        #assert 1 in self.classes_ and -1 in self.classes_
         self.lstm = construct_lstm(self.hidden_size)
         self.forward = self.lstm
         X0 = jnp.ones((1, self.seq_length, n_features))

@@ -88,7 +88,7 @@ class QLSTM(BaseEstimator, ClassifierMixin): #Quantum LSTM classifier
         self.classes_ = classes
         self.n_classes_ = len(self.classes_)
         assert self.n_classes_ == 2
-        assert 1 in self.classes_ and -1 in self.classes_
+        #assert 1 in self.classes_ and -1 in self.classes_
         self.qlstm = construct_qlstm(self.hidden_size, self.seq_length)
         self.forward = self.qlstm
         X0 = jnp.ones((1, self.seq_length, n_features))

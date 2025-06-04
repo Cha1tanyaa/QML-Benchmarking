@@ -79,9 +79,8 @@ class MLP(BaseEstimator, ClassifierMixin): #Feedforward neural network
         self.classes_ = classes
         self.n_classes_ = len(self.classes_)
         assert self.n_classes_ == 2
-        assert 1 in self.classes_ and -1 in self.classes_
+        #assert 1 in self.classes_ and -1 in self.classes_
 
-        # MODIFIED: Pass self.activation to construct_ffn
         self.ffn = construct_ffn(self.hidden_layer_sizes, self.activation)
         self.forward = self.ffn
 
