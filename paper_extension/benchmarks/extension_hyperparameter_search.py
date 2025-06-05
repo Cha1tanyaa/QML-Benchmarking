@@ -1,3 +1,4 @@
+#import os
 import sys
 import inspect
 import logging
@@ -11,6 +12,16 @@ if str(src) not in sys.path:
 
 import qml_benchmarks.models as models_module
 from qml_benchmarks.hyperparameter_settings import hyper_parameter_settings
+
+#---------------- Set up the environment for parallel processing (optional) ---------
+#BLAS_THREADS = 48
+
+# set before any numpy/sklearn import (optional if you only do it in the subprocess env)
+#os.environ["OMP_NUM_THREADS"]       = str(BLAS_THREADS)
+#os.environ["MKL_NUM_THREADS"]       = str(BLAS_THREADS)
+#os.environ["OPENBLAS_NUM_THREADS"]  = str(BLAS_THREADS)
+#os.environ["NUMEXPR_NUM_THREADS"]   = str(BLAS_THREADS)
+#--------------------------------------------------------------------------------------
 
 #----------- Set up logging -----------
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -29,7 +40,7 @@ def filter_compatible_models(dataset_stem, all_model_names_with_settings, image_
         compatible_subset = [m for m in all_model_names_with_settings if m in general_purpose_models]
     elif "stock" in dataset_stem.lower():
         compatible_subset = [m for m in all_model_names_with_settings if m in sequence_models or m in general_purpose_models]
-    elif "creditcard" in dataset_stem.lower(): 
+    elif "credit" in dataset_stem.lower(): 
          compatible_subset = [m for m in all_model_names_with_settings if m in general_purpose_models]
     else:
         logging.info(f"Dataset {dataset_stem} did not match specific patterns, trying general purpose models with defined hyperparameters.")
@@ -42,6 +53,13 @@ def run_single_search(runner_script_path, clf_name, dataset_file_path, hyperpara
     Executes a single hyperparameter search subprocess.
     Returns True on success, False on failure.
     """
+
+    #env = os.environ.copy()
+    #env["OMP_NUM_THREADS"]      = str(BLAS_THREADS)
+    #env["MKL_NUM_THREADS"]      = str(BLAS_THREADS)
+    #env["OPENBLAS_NUM_THREADS"] = str(BLAS_THREADS)
+    #env["NUMEXPR_NUM_THREADS"]  = str(BLAS_THREADS)
+
     cmd = [
         sys.executable,
         str(runner_script_path),
@@ -49,6 +67,7 @@ def run_single_search(runner_script_path, clf_name, dataset_file_path, hyperpara
         "--dataset-path", str(dataset_file_path),
         "--results-path", str(hyperparam_results_root_path),
         "--n-jobs", "-1",
+        #"--n-jobs", str(BLAS_THREADS),
         "--clean", "True"
     ]
 
@@ -79,8 +98,12 @@ def run_single_search(runner_script_path, clf_name, dataset_file_path, hyperpara
 def main():
     runner_script = repo / "scripts" / "run_hyperparameter_search.py"
     datasets_dir = repo / "paper_extension" / "datasets_generated"
-    hyperparam_results_root = repo / "paper_extension" / "results"
+
+    hyperparam_results_root = repo / "paper_extension" / "results_phase1"
     hyperparam_results_root.mkdir(parents=True, exist_ok=True)
+
+    hyperparam_results2_root = repo / "paper_extension" / "results_phase2"
+    hyperparam_results2_root.mkdir(parents=True, exist_ok=True)
 
     #---------- Discover Models and Datasets ----------
     all_model_names_from_module = [
@@ -99,7 +122,8 @@ def main():
     if skipped_models_no_settings:
         logging.warning(f"Skipping models without defined hyperparameter settings: {skipped_models_no_settings}")
 
-    all_dataset_files = list(datasets_dir.rglob("*.csv"))
+    all_dataset_files = list(datasets_dir.rglob("*_train.csv"))
+
     if not all_dataset_files:
         logging.warning(f"No CSV datasets found in {datasets_dir}")
         return
@@ -114,13 +138,12 @@ def main():
     skipped_specific = specific_models_for_all_datasets_raw - set(specific_models_for_all_datasets)
     if skipped_specific:
         logging.warning(f"Some specific models were requested but lack hyperparameter settings: {skipped_specific}")
-    specific_datasets_for_all_models = {"stock_features.csv", "creditcard.csv"}
+    specific_datasets_for_all_models = {"stock_tickerAAPL_train.csv", "credit_card_card_fraud_train.csv"}
     #----------------------------------------------------------------------
 
     #------------------ Model Categories and Dataset Patterns ----------------
     image_models = ["ConvolutionalNeuralNetwork", "WeiNet", "QuanvolutionalNeuralNetwork"]
     general_purpose_models = [
-        "SVM", "MLP", "Perceptron", "XGBoost", "LogisticRegression",
         "CircuitCentricClassifier", "DataReuploadingClassifier",
         "DressedQuantumCircuitClassifier", "IQPVariationalClassifier",
         "QuantumMetricLearner", "QuantumBoltzmannMachine", "SVC",
@@ -128,7 +151,7 @@ def main():
         "QuantumKitchenSinks", "SeparableVariationalClassifier", "SeparableKernelClassifier"
     ]
     sequence_models = ["LSTM", "QLSTM"]
-    synthetic_dataset_stems = {"linearly_separable", "parity", "two_curves", "hidden_manifold"}
+    synthetic_dataset_stems = {"linearly_separable", "hyperplanes", "two_curves", "hidden_manifold"}
 
     processed_combinations = set()
     #--------------------------------------------------------------------------
@@ -181,7 +204,7 @@ def main():
                 continue
 
             logging.info(f"Attempting Phase 2 search: {clf_name} on {target_dataset_basename}")
-            run_single_search(runner_script, clf_name, target_dataset_path, hyperparam_results_root)
+            run_single_search(runner_script, clf_name, target_dataset_path, hyperparam_results2_root)
             processed_combinations.add((target_dataset_basename, clf_name))
     #----------------------------------------------------------------------------
 

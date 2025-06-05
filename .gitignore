@@ -14,7 +14,8 @@ paper/benchmarks/two_curves
 paper/benchmarks/two_curves_diff
 paper_extension/datasets_generated/
 paper_extension/datasets/
-paper_extension/results/
+paper_extension/results_phase1/
+paper_extension/results_phase2/
 
 # VSCode files should not be tracked
 .vscode/
