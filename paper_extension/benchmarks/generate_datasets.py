@@ -250,8 +250,14 @@ class generate_datasets:
             ft = subdir / f"stock_{suffix}_train.csv"
             fs = subdir / f"stock_{suffix}_test.csv"
 
-            pd.DataFrame(np.c_[X_tr, y_tr]).to_csv(ft, index=False)
-            pd.DataFrame(np.c_[X_te, y_te]).to_csv(fs, index=False)
+            y_tr_col = y_tr.reshape(-1, 1) if y_tr.ndim == 1 else y_tr
+            y_te_col = y_te.reshape(-1, 1) if y_te.ndim == 1 else y_te
+            
+            data_tr = np.c_[X_tr, y_tr_col]
+            data_te = np.c_[X_te, y_te_col]
+
+            pd.DataFrame(data_tr).to_csv(ft, index=False, header=False)
+            pd.DataFrame(data_te).to_csv(fs, index=False, header=False)
 
     def two_curves(self):
         grp = "two_curves"
