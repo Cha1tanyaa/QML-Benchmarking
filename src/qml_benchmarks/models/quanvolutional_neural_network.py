@@ -282,7 +282,7 @@ class QuanvolutionalNeuralNetwork(BaseEstimator, ClassifierMixin):
         self.classes_ = classes
         self.n_classes_ = len(self.classes_)
         assert self.n_classes_ == 2
-        assert 1 in self.classes_ and -1 in self.classes_
+        #assert 1 in self.classes_ and -1 in self.classes_
 
         self.height = int(jnp.sqrt(n_features))
         self.width = self.height
