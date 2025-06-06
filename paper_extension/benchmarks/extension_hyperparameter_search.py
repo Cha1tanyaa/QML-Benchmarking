@@ -28,25 +28,6 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 #---------------------------------------
 
 #------------------- Helper Functions -------------------
-def filter_compatible_models(dataset_stem, all_model_names_with_settings, image_models, general_purpose_models, sequence_models, synthetic_dataset_stems):
-    """
-    Filters models based on dataset compatibility.
-    Assumes all_model_names_with_settings already contains only models with defined hyperparameters.
-    """
-    compatible_subset = []
-    if "bars_and_stripes" in dataset_stem.lower():
-        compatible_subset = [m for m in all_model_names_with_settings if m in image_models or m in general_purpose_models]
-    elif any(synth_name in dataset_stem.lower() for synth_name in synthetic_dataset_stems):
-        compatible_subset = [m for m in all_model_names_with_settings if m in general_purpose_models]
-    elif "stock" in dataset_stem.lower():
-        compatible_subset = [m for m in all_model_names_with_settings if m in sequence_models or m in general_purpose_models]
-    elif "credit" in dataset_stem.lower(): 
-         compatible_subset = [m for m in all_model_names_with_settings if m in general_purpose_models]
-    else:
-        logging.info(f"Dataset {dataset_stem} did not match specific patterns, trying general purpose models with defined hyperparameters.")
-        compatible_subset = [m for m in all_model_names_with_settings if m in general_purpose_models]
-    
-    return [m for m in compatible_subset if m in all_model_names_with_settings]
 
 def run_single_search(runner_script_path, clf_name, dataset_file_path, hyperparam_results_root_path):
     """
@@ -124,6 +105,11 @@ def main():
 
     all_dataset_files = list(datasets_dir.rglob("*_train.csv"))
 
+    #all_dataset_files = [
+    #p for p in all_dataset_files
+    #if "bars_and_stripes" not in p.name.lower() and "hyperplanes" not in p.name.lower() and "hmm" not in p.name.lower() and "linsep" not in p.name.lower() and "two_curves" not #in p.name.lower()
+    #]
+
     if not all_dataset_files:
         logging.warning(f"No CSV datasets found in {datasets_dir}")
         return
@@ -132,6 +118,7 @@ def main():
 
     #---------- Custom Settings for Specific Models and Datasets ----------
     specific_models_for_all_datasets_raw = {"LSTM", "MLP", "QLSTM", "SVM", "XGBoost"}
+    #specific_models_for_all_datasets_raw = {""}
     specific_models_for_all_datasets = [
         m for m in specific_models_for_all_datasets_raw if m in all_model_names_with_settings
     ]
@@ -140,18 +127,6 @@ def main():
         logging.warning(f"Some specific models were requested but lack hyperparameter settings: {skipped_specific}")
     specific_datasets_for_all_models = {"stock_tickerAAPL_train.csv", "credit_card_card_fraud_train.csv"}
     #----------------------------------------------------------------------
-
-    #------------------ Model Categories and Dataset Patterns ----------------
-    image_models = ["ConvolutionalNeuralNetwork", "WeiNet", "QuanvolutionalNeuralNetwork"]
-    general_purpose_models = [
-        "CircuitCentricClassifier", "DataReuploadingClassifier",
-        "DressedQuantumCircuitClassifier", "IQPVariationalClassifier",
-        "QuantumMetricLearner", "QuantumBoltzmannMachine", "SVC",
-        "TreeTensorClassifier", "IQPKernelClassifier", "ProjectedQuantumKernel",
-        "QuantumKitchenSinks", "SeparableVariationalClassifier", "SeparableKernelClassifier"
-    ]
-    sequence_models = ["LSTM", "QLSTM"]
-    synthetic_dataset_stems = {"linearly_separable", "hyperplanes", "two_curves", "hidden_manifold"}
 
     processed_combinations = set()
     #--------------------------------------------------------------------------
@@ -171,8 +146,8 @@ def main():
             processed_combinations.add((dataset_name, clf_name))
     #--------------------------------------------------------------------------
 
-    #---------------- Phase 2: Run ALL compatible models on specific datasets ----------------
-    logging.info(f"\n--- PHASE 2: Running ALL compatible models on specific datasets: {specific_datasets_for_all_models} ---")
+    #---------------- Phase 2: Run ALL models with settings on specific datasets ----------------
+    logging.info(f"\n--- PHASE 2: Running ALL models with settings on specific datasets: {specific_datasets_for_all_models} ---")
     for target_dataset_basename in specific_datasets_for_all_models:
         target_dataset_path = None
         for d_path in all_dataset_files:
@@ -183,22 +158,10 @@ def main():
         if not target_dataset_path:
             logging.warning(f"Phase 2 - Target dataset '{target_dataset_basename}' not found in {datasets_dir}. Skipping.")
             continue
-
-        dataset_stem = target_dataset_path.stem
         logging.info(f"Phase 2 - Processing dataset: {target_dataset_basename}")
+        logging.info(f"Phase 2 - Models to run on {target_dataset_basename}: {all_model_names_with_settings}")
 
-        compatible_models = filter_compatible_models(
-            dataset_stem,
-            all_model_names_with_settings,
-            image_models,
-            general_purpose_models,
-            sequence_models,
-            synthetic_dataset_stems
-        )
-        
-        logging.info(f"Phase 2 - Compatible models for {target_dataset_basename}: {compatible_models}")
-
-        for clf_name in compatible_models:
+        for clf_name in all_model_names_with_settings:
             if (target_dataset_basename, clf_name) in processed_combinations:
                 logging.debug(f"Skipping already processed (Phase 2 target): {clf_name} on {target_dataset_basename}")
                 continue
