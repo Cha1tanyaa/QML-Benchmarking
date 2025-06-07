@@ -1,102 +1,90 @@
-import os
 import sys
 import logging
-import numpy as np
 import pandas as pd
 from pathlib import Path
-from importlib import import_module
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import accuracy_score
 
-root = Path(__file__).resolve().parents[1]
-src  = root / "src"
-sys.path.insert(0, str(src))
+path_to_add_to_sys = Path(__file__).resolve().parents[2]
+if str(path_to_add_to_sys) not in sys.path:
+    sys.path.insert(0, str(path_to_add_to_sys))
 
-import qml_benchmarks.models as models
+import src.qml_benchmarks.models as models
+from src.qml_benchmarks.hyperparam_search_utils import read_data, csv_to_dict
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-#------------------- Helper Functions -------------------
-def get_models_list():
-    """
-    Returns a list of model classes from the models package.
-    Adjust the list as needed.
-    """
-    model_classes = []
-    for name in models.__all__:
-        try:
-            model_class = getattr(models, name)
-            model_classes.append(model_class)
-        except AttributeError:
-            logging.warning(f"Model {name} not found in models package.")
-    return model_classes
-
-def benchmark_models(X, y, test_size=0.2, random_state=42):
-    """
-    Benchmarks all models on the provided dataset.
-    Returns a DataFrame with the accuracy scores.
-    """
-    results = []
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=test_size, random_state=random_state
-    )
-    models_list = get_models_list()
-    for model_class in models_list:
-        logging.info(f"Benchmarking model: {model_class.__name__}")
-        try:
-            model = model_class()
-            model.fit(X_train, y_train)
-            y_pred = model.predict(X_test)
-            acc = accuracy_score(y_test, y_pred)
-            results.append({
-                "Model": model_class.__name__,
-                "Accuracy": acc
-            })
-        except Exception as e:
-            logging.error(f"Error using model {model_class.__name__}: {e}")
-            results.append({
-                "Model": model_class.__name__,
-                "Accuracy": np.nan
-            })
-    return pd.DataFrame(results)
-
-def load_data_from_csv(file_path):
-    """Loads X and y from a CSV file. Assumes target y is the last column."""
-    data = pd.read_csv(file_path)
-    X = data.iloc[:, :-1].values
-    y = data.iloc[:, -1].values
-    return X, y
-#------------------- End of Helper Functions -------------------
-
 if __name__ == "__main__":
-    csv_datasets_path = root / "paper_extension" / "datasets_generated"
-    
-    all_csv_results = []
 
-    for csv_file in csv_datasets_path.rglob("*.csv"):
-        ds_name = csv_file.stem
-        try:
-            logging.info(f"Loading dataset from: {csv_file}")
-            X, y = load_data_from_csv(csv_file)
-            if X.size == 0 or y.size == 0:
-                logging.warning(f"No data loaded from {csv_file}. Skipping.")
-                continue
-            if X.shape[0] != y.shape[0]:
-                logging.warning(f"Mismatch in samples vs labels in {csv_file}. X: {X.shape}, y: {y.shape}. Skipping.")
-                continue
-            logging.info(f"Benchmarking dataset: {ds_name}")
-            df = benchmark_models(X, y)
-            df["Dataset"] = ds_name
-            all_csv_results.append(df)
-        except Exception as e:
-            logging.warning(f"Could not process dataset {ds_name} from {csv_file}: {e}")
-        
-    if all_csv_results:
-        df_results = pd.concat(all_csv_results, ignore_index=True)
-        logging.info("\nBenchmark Results from CSVs:")
-        logging.info(df_results)
-        results_output_path = Path(os.getcwd()) / "benchmark_results.csv"
-        df_results.to_csv(results_output_path, index=False)
-        logging.info(f"Results saved to {results_output_path}")
+    qml_benchmarks_root = path_to_add_to_sys
+
+    hyperparameter_dir   = qml_benchmarks_root / "paper_extension" / "results_phase1" / "results"
+    data_dir = qml_benchmarks_root / "paper_extension" / "datasets_generated"
+    all_results = []
+
+    logging.info(f"Looking for hyperparam files in: {hyperparameter_dir}")
+    hp_files = list(hyperparameter_dir.glob("*-best-hyperparameters.csv"))
+    logging.info(f"Found {len(hp_files)} hyperparameter files.")
+
+    for hp_file in hp_files:
+        stem = hp_file.stem.replace("-best-hyperparameters", "")
+        parts = stem.split("_")
+
+        classifier_name = parts[0]
+        dataset_stem = "_".join(parts[1:-2])
+        logging.info(f"Scoring {classifier_name} on {dataset_stem} (file: {hp_file.name})")
+
+        train_csv = next(data_dir.rglob(f"{dataset_stem}_train.csv"))
+        test_csv  = next(data_dir.rglob(f"{dataset_stem}_test.csv"))
+
+        X_train, y_train = read_data(str(train_csv))
+        X_test,  y_test  = read_data(str(test_csv))
+        best_params = csv_to_dict(str(hp_file))
+
+        processed_params = {}
+        if best_params is not None:
+            for key, value in best_params.items():
+                if isinstance(value, str):
+                    try:
+                        float_val = float(value)
+                        if float_val.is_integer():
+                            processed_params[key] = int(float_val)
+                        else:
+                            processed_params[key] = float_val
+                    except ValueError:
+                        if value.lower() == 'true':
+                            processed_params[key] = True
+                        elif value.lower() == 'false':
+                            processed_params[key] = False
+                        elif value.lower() == 'none':
+                            processed_params[key] = None
+                        else:
+                            processed_params[key] = value
+                elif isinstance(value, float) and value.is_integer(): 
+                    processed_params[key] = int(value)
+                else:
+                    processed_params[key] = value
+        best_params = processed_params if best_params is not None else {}
+
+        for seed in range(5):
+            try:
+                Model = getattr(models, classifier_name)
+                clf   = Model(**best_params, random_state=seed)
+                clf.fit(X_train, y_train)
+                train_acc = clf.score(X_train, y_train)
+                test_acc  = clf.score(X_test,  y_test)
+                all_results.append({
+                    "Model":         classifier_name,
+                    "Dataset":       dataset_stem,
+                    "Seed":          seed,
+                    "TrainAccuracy": train_acc,
+                    "TestAccuracy":  test_acc,
+                })
+            except Exception as e:
+                logging.error(f"Failed {classifier_name}/{dataset_stem} seed {seed}: {e}")
+
+    if all_results:
+        df_out = pd.DataFrame(all_results)
+        out_fp = qml_benchmarks_root / "paper_extension" / "results_phase1" / "benchmark_best_hyperparams.csv"
+        df_out.to_csv(out_fp, index=False)
+        logging.info(f"Saved benchmark results to {out_fp}")
     else:
-        logging.info("No CSV results to display or save.")
+        logging.warning("No benchmarks were run.")
