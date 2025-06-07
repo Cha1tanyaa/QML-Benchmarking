@@ -12,6 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import sys
+from pathlib import Path
+
+path_to_add_to_sys = Path(__file__).resolve().parents[2]
+if str(path_to_add_to_sys) not in sys.path:
+    sys.path.insert(0, str(path_to_add_to_sys))
+
 """Module containing models to be used in benchmarks."""
 
 from qml_benchmarks.models.circuit_centric import CircuitCentricClassifier

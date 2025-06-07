@@ -5,13 +5,12 @@ import logging
 import subprocess
 from pathlib import Path
 
-repo = Path(__file__).resolve().parents[2]
-src = repo / "src"
-if str(src) not in sys.path:
-    sys.path.insert(0, str(src))
+path_to_add_to_sys = Path(__file__).resolve().parents[2]
+if str(path_to_add_to_sys) not in sys.path:
+    sys.path.insert(0, str(path_to_add_to_sys))
 
-import qml_benchmarks.models as models_module
-from qml_benchmarks.hyperparameter_settings import hyper_parameter_settings
+import src.qml_benchmarks.models as models_module
+from src.qml_benchmarks.hyperparameter_settings import hyper_parameter_settings
 
 #---------------- Set up the environment for parallel processing (optional) ---------
 #BLAS_THREADS = 48
@@ -77,13 +76,16 @@ def run_single_search(runner_script_path, clf_name, dataset_file_path, hyperpara
 #------------------- End of Helper Functions -------------------
 
 def main():
-    runner_script = repo / "scripts" / "run_hyperparameter_search.py"
-    datasets_dir = repo / "paper_extension" / "datasets_generated"
 
-    hyperparam_results_root = repo / "paper_extension" / "results_phase1"
+    qml_benchmarks_root = path_to_add_to_sys
+
+    runner_script = qml_benchmarks_root / "scripts" / "run_hyperparameter_search.py"
+    datasets_dir = qml_benchmarks_root / "paper_extension" / "datasets_generated"
+
+    hyperparam_results_root = qml_benchmarks_root / "paper_extension" / "results_phase1"
     hyperparam_results_root.mkdir(parents=True, exist_ok=True)
 
-    hyperparam_results2_root = repo / "paper_extension" / "results_phase2"
+    hyperparam_results2_root = qml_benchmarks_root / "paper_extension" / "results_phase2"
     hyperparam_results2_root.mkdir(parents=True, exist_ok=True)
 
     #---------- Discover Models and Datasets ----------
@@ -105,10 +107,9 @@ def main():
 
     all_dataset_files = list(datasets_dir.rglob("*_train.csv"))
 
-    #all_dataset_files = [
-    #p for p in all_dataset_files
-    #if "bars_and_stripes" not in p.name.lower() and "hyperplanes" not in p.name.lower() and "hmm" not in p.name.lower() and "linsep" not in p.name.lower() and "two_curves" not #in p.name.lower()
-    #]
+    #all_dataset_files = 
+    #[p for p in all_dataset_files
+    #if "bars_and_stripes" not in p.name.lower() and "hyperplanes" not in p.name.lower() and "hmm" not in p.name.lower() and "linsep" not in p.name.lower() and "two_curves" not #in p.name.lower()]
 
     if not all_dataset_files:
         logging.warning(f"No CSV datasets found in {datasets_dir}")
@@ -118,7 +119,6 @@ def main():
 
     #---------- Custom Settings for Specific Models and Datasets ----------
     specific_models_for_all_datasets_raw = {"LSTM", "MLP", "QLSTM", "SVM", "XGBoost"}
-    #specific_models_for_all_datasets_raw = {""}
     specific_models_for_all_datasets = [
         m for m in specific_models_for_all_datasets_raw if m in all_model_names_with_settings
     ]
