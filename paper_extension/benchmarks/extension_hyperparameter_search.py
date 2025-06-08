@@ -51,28 +51,8 @@ def run_single_search(runner_script_path, clf_name, dataset_file_path, hyperpara
         "--clean", "True"
     ]
 
-    logging.info(f"Executing command: {' '.join(cmd)}")
-    try:
-        process = subprocess.run(cmd, check=True, text=True, encoding='utf-8', capture_output=True)
-        logging.info(f"Successfully ran hyperparameter search for {clf_name} on {dataset_file_path.name}.")
-        if process.stdout:
-            logging.debug(f"Stdout for {clf_name} on {dataset_file_path.name}:\n{process.stdout.strip()}")
-        return True
-    except subprocess.CalledProcessError as e:
-        logging.error(f"Error running hyperparameter search for {clf_name} on {dataset_file_path.name}.")
-        logging.error(f"Command: {' '.join(e.cmd)}")
-        logging.error(f"Return code: {e.returncode}")
-        if e.stdout:
-            logging.error(f"Stdout: {e.stdout.strip()}")
-        if e.stderr:
-            logging.error(f"Stderr: {e.stderr.strip()}")
-        return False
-    except FileNotFoundError:
-        logging.error(f"Error: The script {runner_script_path} was not found. Ensure the path is correct.")
-        return False
-    except Exception as e:
-        logging.error(f"An unexpected error occurred while trying to run {clf_name} on {dataset_file_path.name}: {e}", exc_info=True)
-        return False
+    process = subprocess.run(cmd, check=True, text=True, encoding='utf-8', capture_output=True)
+    logging.info(f"Successfully ran hyperparameter search for {clf_name} on {dataset_file_path.name}.")
 #------------------- End of Helper Functions -------------------
 
 def main():
@@ -93,38 +73,23 @@ def main():
         name for name, cls in inspect.getmembers(models_module, inspect.isclass)
         if cls.__module__.startswith("qml_benchmarks.models") and name != "BaseModel"
     ]
-    logging.info(f"Found models in models module: {all_model_names_from_module}")
+    logging.info(f"Found models: {all_model_names_from_module}")
 
     all_model_names_with_settings = [
         model_name for model_name in all_model_names_from_module
         if model_name in hyper_parameter_settings
     ]
-    logging.info(f"Models with defined hyperparameters: {all_model_names_with_settings}")
-
-    skipped_models_no_settings = set(all_model_names_from_module) - set(all_model_names_with_settings)
-    if skipped_models_no_settings:
-        logging.warning(f"Skipping models without defined hyperparameter settings: {skipped_models_no_settings}")
 
     all_dataset_files = list(datasets_dir.rglob("*_train.csv"))
 
     #all_dataset_files = 
     #[p for p in all_dataset_files
     #if "bars_and_stripes" not in p.name.lower() and "hyperplanes" not in p.name.lower() and "hmm" not in p.name.lower() and "linsep" not in p.name.lower() and "two_curves" not #in p.name.lower()]
-
-    if not all_dataset_files:
-        logging.warning(f"No CSV datasets found in {datasets_dir}")
-        return
-    logging.info(f"Found {len(all_dataset_files)} dataset(s) to process in total.")
     #------------------------------------------------------------
 
     #---------- Custom Settings for Specific Models and Datasets ----------
     specific_models_for_all_datasets_raw = {"LSTM", "MLP", "QLSTM", "SVM", "XGBoost"}
-    specific_models_for_all_datasets = [
-        m for m in specific_models_for_all_datasets_raw if m in all_model_names_with_settings
-    ]
-    skipped_specific = specific_models_for_all_datasets_raw - set(specific_models_for_all_datasets)
-    if skipped_specific:
-        logging.warning(f"Some specific models were requested but lack hyperparameter settings: {skipped_specific}")
+    specific_models_for_all_datasets = [ m for m in specific_models_for_all_datasets_raw if m in all_model_names_with_settings]
     specific_datasets_for_all_models = {"stock_tickerAAPL_train.csv", "credit_card_card_fraud_train.csv"}
     #----------------------------------------------------------------------
 
@@ -135,13 +100,9 @@ def main():
     logging.info(f"\n--- PHASE 1: Running models {specific_models_for_all_datasets} on ALL available datasets ---")
     for dataset_path in all_dataset_files:
         dataset_name = dataset_path.name
-        logging.info(f"Phase 1 - Processing dataset: {dataset_name}")
+        logging.info(f"Phase 1 - Dataset: {dataset_name}")
         for clf_name in specific_models_for_all_datasets:
-            if (dataset_name, clf_name) in processed_combinations:
-                logging.debug(f"Skipping already processed (Phase 1 target): {clf_name} on {dataset_name}")
-                continue
-            
-            logging.info(f"Attempting Phase 1 search: {clf_name} on {dataset_name}")
+            logging.info(f"Phase 1 search: {clf_name} on {dataset_name}")
             run_single_search(runner_script, clf_name, dataset_path, hyperparam_results_root)
             processed_combinations.add((dataset_name, clf_name))
     #--------------------------------------------------------------------------
@@ -154,19 +115,15 @@ def main():
             if d_path.name == target_dataset_basename:
                 target_dataset_path = d_path
                 break
-        
-        if not target_dataset_path:
-            logging.warning(f"Phase 2 - Target dataset '{target_dataset_basename}' not found in {datasets_dir}. Skipping.")
-            continue
-        logging.info(f"Phase 2 - Processing dataset: {target_dataset_basename}")
-        logging.info(f"Phase 2 - Models to run on {target_dataset_basename}: {all_model_names_with_settings}")
+    
+        logging.info(f"Phase 2 - Dataset: {target_dataset_basename}")
+        logging.info(f"Phase 2 - Models: {all_model_names_with_settings}")
 
         for clf_name in all_model_names_with_settings:
             if (target_dataset_basename, clf_name) in processed_combinations:
-                logging.debug(f"Skipping already processed (Phase 2 target): {clf_name} on {target_dataset_basename}")
                 continue
 
-            logging.info(f"Attempting Phase 2 search: {clf_name} on {target_dataset_basename}")
+            logging.info(f"Phase 2 search: {clf_name} on {target_dataset_basename}")
             run_single_search(runner_script, clf_name, target_dataset_path, hyperparam_results2_root)
             processed_combinations.add((target_dataset_basename, clf_name))
     #----------------------------------------------------------------------------

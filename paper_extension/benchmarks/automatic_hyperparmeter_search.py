@@ -54,17 +54,12 @@ def main():
         name for name, cls in inspect.getmembers(models_module, inspect.isclass)
         if cls.__module__.startswith("qml_benchmarks.models") and name != "BaseModel"
     ]
-    logging.info(f"Found models in models module: {all_model_names_from_module}")
+    logging.info(f"Found models: {all_model_names_from_module}")
 
     all_model_names = [
         model_name for model_name in all_model_names_from_module
         if model_name in hyper_parameter_settings
     ]
-    logging.info(f"Models with defined hyperparameters: {all_model_names}")
-
-    skipped_models_no_settings = set(all_model_names_from_module) - set(all_model_names)
-    if skipped_models_no_settings:
-        logging.warning(f"Skipping models without defined hyperparameter settings: {skipped_models_no_settings}")
     #---------------------------------------------------
 
     #---------- Define Model Categories and Dataset Patterns ----------
@@ -81,17 +76,12 @@ def main():
     synthetic_dataset_stems = {"linearly_separable", "parity", "two_curves", "hidden_manifold"}
 
     dataset_files = list(datasets_dir.rglob("*.csv"))
-    if not dataset_files:
-        logging.warning(f"No CSV datasets found in {datasets_dir}")
-        return
-
-    logging.info(f"Found {len(dataset_files)} dataset(s) to process.")
     #------------------------------------------------------------
 
     #---------- Hyperparameter Search ----------
     for dataset_file_path in dataset_files:
         dataset_stem = dataset_file_path.stem
-        logging.info(f"Processing dataset: {dataset_file_path.name}")
+        logging.info(f"Dataset: {dataset_file_path.name}")
 
         compatible_models = filter_compatible_models(
             dataset_stem,
@@ -101,12 +91,6 @@ def main():
             sequence_models,
             synthetic_dataset_stems
         )
-
-        if not compatible_models:
-            logging.warning(f"No compatible models with defined hyperparameters identified for dataset: {dataset_stem}. Skipping.")
-            continue
-
-        logging.info(f"Compatible models for {dataset_stem}: {compatible_models}")
 
         for clf_name in compatible_models:
             logging.info(f"Preparing to run hyperparameter search for {clf_name} on {dataset_file_path.name}")
@@ -123,24 +107,10 @@ def main():
 
             logging.info(f"Executing command: {' '.join(cmd)}")
 
-            try:
-                process = subprocess.run(cmd, check=True, text=True, encoding='utf-8', capture_output=True)
-                logging.info(f"Successfully ran hyperparameter search for {clf_name} on {dataset_file_path.name}.")
-                if process.stdout:
-                    logging.debug(f"Stdout for {clf_name} on {dataset_file_path.name}:\n{process.stdout.strip()}")
-            except subprocess.CalledProcessError as e:
-                logging.error(f"Error running hyperparameter search for {clf_name} on {dataset_file_path.name}.")
-                logging.error(f"Command: {' '.join(e.cmd)}")
-                logging.error(f"Return code: {e.returncode}")
-                if e.stdout:
-                    logging.error(f"Stdout: {e.stdout.strip()}")
-                if e.stderr:
-                    logging.error(f"Stderr: {e.stderr.strip()}")
-            except FileNotFoundError:
-                logging.error(f"Error: The script {runner_script} was not found. Ensure the path is correct.")
-                return
-            except Exception as e:
-                logging.error(f"An unexpected error occurred while trying to run {clf_name} on {dataset_file_path.name}: {e}", exc_info=True)
+            process = subprocess.run(cmd, check=True, text=True, encoding='utf-8', capture_output=True)
+            logging.info(f"Successfully ran hyperparameter search for {clf_name} on {dataset_file_path.name}.")
+            if process.stdout:
+                logging.debug(f"Stdout for {clf_name} on {dataset_file_path.name}:\n{process.stdout.strip()}")
     #------------------------------------------------
 
 if __name__ == "__main__":
