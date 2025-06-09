@@ -51,8 +51,27 @@ def run_single_search(runner_script_path, clf_name, dataset_file_path, hyperpara
         "--clean", "True"
     ]
 
-    process = subprocess.run(cmd, check=True, text=True, encoding='utf-8', capture_output=True)
-    logging.info(f"Successfully ran hyperparameter search for {clf_name} on {dataset_file_path.name}.")
+    if clf_name in ["LSTM", "QLSTM"]:
+        cmd.extend([
+            "--hyperparameter-scoring", "r2", "neg_mean_squared_error",
+            "--hyperparameter-refit", "r2"
+        ])
+
+    try:
+        process = subprocess.run(cmd, check=True, text=True, encoding='utf-8', capture_output=True)
+        logging.info(f"Successfully ran hyperparameter search for {clf_name} on {dataset_file_path.name}.")
+        logging.debug(f"Subprocess stdout for {clf_name} on {dataset_file_path.name}:\n{process.stdout}")
+        if process.stderr:
+            logging.warning(f"Subprocess stderr for {clf_name} on {dataset_file_path.name}:\n{process.stderr}")
+        return True
+    except subprocess.CalledProcessError as e:
+        logging.error(f"Subprocess for {clf_name} on {dataset_file_path.name} failed with exit code {e.returncode}.")
+        logging.error(f"Command was: {' '.join(e.cmd)}")
+        if e.stdout:
+            logging.error(f"Subprocess stdout:\n{e.stdout}")
+        if e.stderr:
+            logging.error(f"Subprocess stderr:\n{e.stderr}")
+        return False
 #------------------- End of Helper Functions -------------------
 
 def main():
@@ -68,6 +87,9 @@ def main():
     hyperparam_results2_root = qml_benchmarks_root / "paper_extension" / "results_phase2"
     hyperparam_results2_root.mkdir(parents=True, exist_ok=True)
 
+    hyperparam_results3_root = qml_benchmarks_root / "paper_extension" / "results_phase3"
+    hyperparam_results3_root.mkdir(parents=True, exist_ok=True)
+
     #---------- Discover Models and Datasets ----------
     all_model_names_from_module = [
         name for name, cls in inspect.getmembers(models_module, inspect.isclass)
@@ -82,50 +104,60 @@ def main():
 
     all_dataset_files = list(datasets_dir.rglob("*_train.csv"))
 
-    #all_dataset_files = 
-    #[p for p in all_dataset_files
-    #if "bars_and_stripes" not in p.name.lower() and "hyperplanes" not in p.name.lower() and "hmm" not in p.name.lower() and "linsep" not in p.name.lower() and "two_curves" not #in p.name.lower()]
     #------------------------------------------------------------
 
     #---------- Custom Settings for Specific Models and Datasets ----------
-    specific_models_for_all_datasets_raw = {"LSTM", "MLP", "QLSTM", "SVM", "XGBoost"}
-    specific_models_for_all_datasets = [ m for m in specific_models_for_all_datasets_raw if m in all_model_names_with_settings]
-    specific_datasets_for_all_models = {"stock_tickerAAPL_train.csv", "credit_card_card_fraud_train.csv"}
+    phase1_models_config = {"MLP", "SVM", "XGBoost"}
+    phase2_models_config = {"LSTM", "QLSTM"}
+    phase2_dataset_paths = {"stock_tickerAAPL_train.csv"}
+    phase3_dataset_paths = {"credit_card_fraud_train.csv"} 
+
+    phase1_models_to_run = sorted([m for m in phase1_models_config if m in all_model_names_with_settings])
+    phase1_dataset_paths = sorted([p for p in all_dataset_files if p.name not in phase2_dataset_paths])
+
+    phase2_models_to_run = sorted([m for m in phase2_models_config if m in all_model_names_with_settings])
+    phase2_dataset_paths = sorted(p for p in all_dataset_files if p.name in phase2_dataset_paths) 
+
+    phase3_models_to_run = sorted([m for m in all_model_names_with_settings if m not in phase1_models_to_run and m not in phase2_models_to_run])
+    phase3_dataset_paths = sorted([p for p in all_dataset_files if p.name in phase3_dataset_paths])
     #----------------------------------------------------------------------
 
     processed_combinations = set()
-    #--------------------------------------------------------------------------
 
     #------------- Phase 1: Run specific models on ALL datasets ---------------
-    logging.info(f"\n--- PHASE 1: Running models {specific_models_for_all_datasets} on ALL available datasets ---")
-    for dataset_path in all_dataset_files:
+    logging.info(f"\n--- PHASE 1: Running New models {phase1_models_to_run} ---")
+    for dataset_path in phase1_dataset_paths:
         dataset_name = dataset_path.name
         logging.info(f"Phase 1 - Dataset: {dataset_name}")
-        for clf_name in specific_models_for_all_datasets:
+        for clf_name in phase1_models_to_run:
             logging.info(f"Phase 1 search: {clf_name} on {dataset_name}")
             run_single_search(runner_script, clf_name, dataset_path, hyperparam_results_root)
             processed_combinations.add((dataset_name, clf_name))
     #--------------------------------------------------------------------------
 
-    #---------------- Phase 2: Run ALL models with settings on specific datasets ----------------
-    logging.info(f"\n--- PHASE 2: Running ALL models with settings on specific datasets: {specific_datasets_for_all_models} ---")
-    for target_dataset_basename in specific_datasets_for_all_models:
-        target_dataset_path = None
-        for d_path in all_dataset_files:
-            if d_path.name == target_dataset_basename:
-                target_dataset_path = d_path
-                break
-    
-        logging.info(f"Phase 2 - Dataset: {target_dataset_basename}")
-        logging.info(f"Phase 2 - Models: {all_model_names_with_settings}")
+    #------------- Phase 2: Run specific models on ALL datasets ---------------
+    logging.info(f"\n--- PHASE 2: Running Regression models {phase2_models_to_run} ---")
+    for dataset_path in phase2_dataset_paths:
+        dataset_name = dataset_path.name
+        logging.info(f"Phase 2 - Dataset: {dataset_name}")
+        for clf_name in phase2_models_to_run:
+            logging.info(f"Phase 2 search: {clf_name} on {dataset_name}")
+            run_single_search(runner_script, clf_name, dataset_path, hyperparam_results2_root)
+            processed_combinations.add((dataset_name, clf_name))
+    #--------------------------------------------------------------------------
 
-        for clf_name in all_model_names_with_settings:
-            if (target_dataset_basename, clf_name) in processed_combinations:
-                continue
-
-            logging.info(f"Phase 2 search: {clf_name} on {target_dataset_basename}")
-            run_single_search(runner_script, clf_name, target_dataset_path, hyperparam_results2_root)
-            processed_combinations.add((target_dataset_basename, clf_name))
+    #---------------- Phase 3: Run ALL models with settings on specific datasets ----------------
+    logging.info(f"\n--- PHASE 3: Running Other models: {phase3_models_to_run} ---")
+    for dataset_path in phase3_dataset_paths:
+            dataset_name = dataset_path.name
+            logging.info(f"Phase 3 - Current Dataset: {dataset_name}")
+            for clf_name in phase3_models_to_run:
+                if (dataset_name, clf_name) in processed_combinations:
+                    logging.warning(f"Skipping {clf_name} on {dataset_name} (already processed.")
+                    continue
+                logging.info(f"Phase 3 search: {clf_name} on {dataset_name}")
+                run_single_search(runner_script, clf_name, dataset_path, hyperparam_results3_root)
+                processed_combinations.add((dataset_name, clf_name))
     #----------------------------------------------------------------------------
 
 if __name__ == "__main__":
