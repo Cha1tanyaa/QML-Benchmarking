@@ -3,6 +3,8 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
+from sklearn.decomposition import PCA
+from sklearn.feature_selection import SelectKBest, f_classif
 
 repo = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(repo / "src"))
@@ -111,7 +113,10 @@ DEFAULT_PARAMS = {
         "configurations": [
             {
                 "split_test_size": 0.2,
-                "random_state_offset": 0
+                "random_state_offset": 0,
+                "sample_percentage": 0.02,
+                "pca_n_components": 6,
+                "select_k_best_features": 2 
             }
         ],
     },
@@ -301,6 +306,31 @@ class generate_datasets:
             seed = self.base_seed + cfg.get("random_state_offset", 0)
             np.random.seed(seed)
             X, y = gen_fn()
+            sample_percentage = cfg.get("sample_percentage", 1.0)
+
+            if sample_percentage < 1.0 and 0 < sample_percentage:
+                print(f"Original dataset size: {X.shape[0]} samples.")
+                X_sampled, _, y_sampled, _ = train_test_split(
+                    X, y, 
+                    train_size=sample_percentage, 
+                    random_state=seed, 
+                    stratify=y
+                )
+                X, y = X_sampled, y_sampled
+                print(f"Subsampled to {sample_percentage*100}%: {X.shape[0]} samples.")
+
+            pca_n_components = cfg.get("pca_n_components")
+            if isinstance(pca_n_components, int) and pca_n_components > 0 and pca_n_components < X.shape[1]:
+                pca = PCA(n_components=pca_n_components, random_state=seed)
+                X = pca.fit_transform(X)
+                print(f"Dataset shape after PCA: {X.shape}")
+
+            select_k_best_features = cfg.get("select_k_best_features")
+            if isinstance(select_k_best_features, int) and select_k_best_features > 0 and select_k_best_features < X.shape[1]:
+                selector = SelectKBest(score_func=f_classif, k=select_k_best_features)
+                X = selector.fit_transform(X, y)
+                print(f"Dataset shape after SelectKBest: {X.shape}")
+
             test_size = cfg.get("split_test_size", 0.2)
             X_tr, X_te, y_tr, y_te = train_test_split(X, y, test_size=test_size, random_state=seed, stratify=y)
             

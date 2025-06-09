@@ -17,7 +17,7 @@ paper_extension/datasets/
 paper_extension/results_phase1/
 paper_extension/results_phase2/
 paper_extension/results_phase3/
-paper_extension/results_phase1_structured/
+
 # VSCode files should not be tracked
 .vscode/
 
