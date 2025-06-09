@@ -32,10 +32,8 @@ def filter_compatible_models(dataset_stem, all_model_names, image_models, genera
     Returns:
         list: Compatible models for the given dataset.
     """
-    if "bars_and_stripes" in dataset_stem.lower():
+    if any(synth_name in dataset_stem.lower() for synth_name in synthetic_dataset_stems):
         return [m for m in all_model_names if m in image_models or m in general_purpose_models]
-    elif any(synth_name in dataset_stem.lower() for synth_name in synthetic_dataset_stems):
-        return [m for m in all_model_names if m in general_purpose_models]
     elif "stock" in dataset_stem.lower():
         return [m for m in all_model_names if m in sequence_models or m in general_purpose_models]
     else:
@@ -65,7 +63,7 @@ def main():
     #---------- Define Model Categories and Dataset Patterns ----------
     image_models = ["ConvolutionalNeuralNetwork", "WeiNet", "QuanvolutionalNeuralNetwork"]
     general_purpose_models = [
-        "SVM", "MLP", "Perceptron", "XGBoost", "LogisticRegression",
+        "SVM", "MLP", "XGBoost",
         "CircuitCentricClassifier", "DataReuploadingClassifier",
         "DressedQuantumCircuitClassifier", "IQPVariationalClassifier",
         "QuantumMetricLearner", "QuantumBoltzmannMachine",
@@ -73,7 +71,7 @@ def main():
         "QuantumKitchenSinks", "SeparableVariationalClassifier", "SeparableKernelClassifier"
     ]
     sequence_models = ["LSTM", "QLSTM"]
-    synthetic_dataset_stems = {"linearly_separable", "parity", "two_curves", "hidden_manifold"}
+    synthetic_dataset_stems = {"linearly_separable", "hmm", "two_curves", "hidden_manifold"}
 
     dataset_files = list(datasets_dir.rglob("*.csv"))
     #------------------------------------------------------------
@@ -104,6 +102,12 @@ def main():
                 "--n-jobs",             "-1",
                 "--clean", "True"             
             ]
+
+            if clf_name in ["LSTM", "QLSTM"]:
+                cmd.extend([
+                    "--hyperparameter-scoring", "r2", "neg_mean_squared_error",
+                    "--hyperparameter-refit", "r2"
+                ])
 
             logging.info(f"Executing command: {' '.join(cmd)}")
 
