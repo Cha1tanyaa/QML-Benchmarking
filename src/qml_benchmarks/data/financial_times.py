@@ -34,7 +34,7 @@ def generate_stock_features_and_labels(ticker="AAPL", start="2010-01-01", end="2
 
     Returns:
         X (ndarray): Standardized feature array of shape (n_samples, n_features).
-        y (ndarray): Array of labels (1 if the price is up, 0 if the price is down).
+        y (ndarray): Array of labels (-1 corresponds to a price decrease, +1 to a price increase).
     """
     df = yf.download(ticker, start=start, end=end, interval="1d")
 
@@ -42,13 +42,15 @@ def generate_stock_features_and_labels(ticker="AAPL", start="2010-01-01", end="2
     df["SMA_200"] = df["Close"].rolling(window=200).mean()
     df["RSI_14"] = compute_rsi(df["Close"], window=14)
 
-    df["label"] = (df["Close"].shift(-1) > df["Close"]).astype(int)
+    df["target"] = df["Close"].shift(-1)
+
+    df.dropna(inplace=True)
 
     df.dropna(inplace=True)
 
     features = ["Close", "SMA_50", "SMA_200", "RSI_14"]
     X = df[features].values
-    y = df["label"].values
+    y = df["target"].values
 
     scaler = StandardScaler()
     X = scaler.fit_transform(X)

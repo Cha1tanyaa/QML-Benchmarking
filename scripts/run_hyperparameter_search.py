@@ -69,7 +69,7 @@ if __name__ == "__main__":
 
     parser.add_argument(
         "--hyperparameter-scoring",
-        type=list,
+        # type=list,
         nargs="+",
         default=["accuracy", "roc_auc"],
         help="Scoring for hyperparameter search.",
@@ -168,7 +168,7 @@ if __name__ == "__main__":
             logging.warning(msg)
             sys.exit(msg)
         else:
-            logging.warning("Cleaning existing results for ", os.path.join(results_path, results_filename_stem + ".csv"))
+            logging.warning("Cleaning existing results for " + os.path.join(results_path, results_filename_stem + ".csv"))
 
 
     ###########################################################################
