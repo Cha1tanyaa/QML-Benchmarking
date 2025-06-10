@@ -3,6 +3,7 @@ import logging
 import pandas as pd
 from pathlib import Path
 
+import ast
 import time
 import numpy as np
 from sklearn.metrics import roc_auc_score, classification_report, accuracy_score
@@ -80,7 +81,10 @@ if __name__ == "__main__":
                         elif value.lower() == 'none':
                             processed_params[key] = None
                         else:
-                            processed_params[key] = value
+                            try:
+                                processed_params[key] = ast.literal_eval(value)
+                            except (ValueError, SyntaxError):
+                                processed_params[key] = value
                 elif isinstance(value, float) and value.is_integer(): 
                     processed_params[key] = int(value)
                 else:
