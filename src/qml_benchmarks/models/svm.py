@@ -9,12 +9,14 @@ from qml_benchmarks.model_utils import train
 jax.config.update("jax_enable_x64", True)
 
 class SVM(BaseEstimator, ClassifierMixin):
+    _estimator_type = "classifier"
+
     def __init__(
         self,
         learning_rate=1.0,
         batch_size=32,
         max_steps=1000,
-        convergence_interval=10,
+        convergence_interval=100,
         random_state=42,
         scaling=1.0,
         jit=True,
@@ -32,7 +34,6 @@ class SVM(BaseEstimator, ClassifierMixin):
             self.max_vmap = self.batch_size
         else:
             self.max_vmap = max_vmap
-        # will be set in fit
         self.scaler_ = None
         self.params_ = None
         self.n_features_ = None
@@ -59,15 +60,12 @@ class SVM(BaseEstimator, ClassifierMixin):
         self.decision_function = decision
 
     def fit(self, X, y):
-        # prepare data
         self.initialize(X.shape[1], classes=np.unique(y))
         X = self.scaler_.fit_transform(X) * self.scaling
-        # map labels {-1,1}
         y = jnp.where(y == self.classes_[0], -1, 1)
-        # init model
         self.initialize_params()
         self.construct_model()
-        optimizer = optax.sgd
+        optimizer = optax.adam
 
         def loss_fn(params, Xb, yb):
             margins = yb * self.decision_function(params, Xb)
@@ -77,7 +75,6 @@ class SVM(BaseEstimator, ClassifierMixin):
         if self.jit:
             loss_fn = jax.jit(loss_fn)
 
-        # train uses self.batch_size and self.max_steps
         self.params_ = train(
             self,
             loss_fn,

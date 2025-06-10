@@ -25,6 +25,8 @@ class XGBoost(BaseEstimator, ClassifierMixin): #XGBoost classifier
         self.scaling = scaling
         self.model = None
         self.scaler = None
+        #self._label_mapping = None
+        #self._reverse_label_mapping = None
 
     def fit(self, X, y):
         self.scaler = StandardScaler()

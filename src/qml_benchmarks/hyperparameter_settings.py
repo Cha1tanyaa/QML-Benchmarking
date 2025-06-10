@@ -177,7 +177,7 @@ hyper_parameter_settings = {
     },
     "SVM": {
         "learning_rate": {"type": "list", "dtype": "float", "val": [0.001, 0.01, 0.1, 1.0]},
-        "batch_size": {"type": "list", "dtype": "int", "val": [32, 64]},
+        "batch_size": {"type": "list", "dtype": "int", "val": [8, 16, 32, 64]},
     },
     "MLP": {
         "batch_size": {"type": "list", "dtype": "int", "val": [32]},
@@ -198,9 +198,9 @@ hyper_parameter_settings = {
         "hidden_size": {"type": "list", "dtype": "int", "val": [10, 20]},
     },
     "XGBoost": {
-        "n_estimators": {"type": "list", "dtype": "int", "val": [150, 300]},
-        "learning_rate": {"type": "list", "dtype": "float", "val": [0.01, 0.1]},
-        "max_depth": {"type": "list", "dtype": "int", "val": [3, 5, 7]},
+        "n_estimators": {"type": "list", "dtype": "int", "val": [150, 200, 300]},
+        "learning_rate": {"type": "list", "dtype": "float", "val": [0.001, 0.01, 0.1]},
+        "max_depth": {"type": "list", "dtype": "int", "val": [3, 5, 7, 10, 13]},
         "subsample": {"type": "list", "dtype": "float", "val": [0.7, 0.8, 0.9]},
         "colsample_bytree": {"type": "list", "dtype": "float", "val": [0.7, 0.8, 0.9]},
     },

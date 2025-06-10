@@ -45,9 +45,6 @@ if __name__ == "__main__":
 
         classifier_name = parts[0]
 
-        #if classifier_name != "MLP":
-        #    logging.info(f"Skipping {classifier_name} as it is not MLP.")
-        #    continue
 
         dataset_stem = "_".join(parts[1:-2])
         logging.info(f"Scoring {classifier_name} on {dataset_stem} (file: {hp_file.name})")
