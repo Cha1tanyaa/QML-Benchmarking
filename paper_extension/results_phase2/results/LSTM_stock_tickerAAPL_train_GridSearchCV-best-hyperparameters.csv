@@ -1,0 +1,4 @@
+hyperparameter,best_value
+batch_size,32.0
+hidden_size,50.0
+learning_rate,0.01

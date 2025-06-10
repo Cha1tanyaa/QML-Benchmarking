@@ -1,0 +1,7 @@
+hyperparameter,best_value
+activation,tanh
+alpha,0.01
+batch_size,32
+hidden_layer_sizes,"(50, 50)"
+learning_rate,0.001
+max_steps,1000
