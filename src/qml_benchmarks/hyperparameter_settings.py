@@ -179,7 +179,7 @@ hyper_parameter_settings = {
         "learning_rate": {"type": "list", "dtype": "float", "val": [0.001, 0.01, 0.1, 1.0]},
         "batch_size": {"type": "list", "dtype": "int", "val": [8, 16, 32, 64]},
     },
-    "MLP": {
+    "Feedforward": {
         "batch_size": {"type": "list", "dtype": "int", "val": [32]},
         "learning_rate": {"type": "list", "dtype": "float", "val": [0.001, 0.01, 0.1]},
         "hidden_layer_sizes": {"type": "list", "dtype": "tuple", "val": ["(100,)", "(50, 50)", "(100, 50, 25)"]},

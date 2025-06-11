@@ -63,7 +63,7 @@ def main():
     #---------- Define Model Categories and Dataset Patterns ----------
     image_models = ["ConvolutionalNeuralNetwork", "WeiNet", "QuanvolutionalNeuralNetwork"]
     general_purpose_models = [
-        "SVM", "MLP", "XGBoost",
+        "SVM", "Feedforward", "XGBoost",
         "CircuitCentricClassifier", "DataReuploadingClassifier",
         "DressedQuantumCircuitClassifier", "IQPVariationalClassifier",
         "QuantumMetricLearner", "QuantumBoltzmannMachine",

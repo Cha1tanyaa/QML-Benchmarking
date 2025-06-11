@@ -59,7 +59,7 @@ from sklearn.svm import SVC as SVC_base
 
 from qml_benchmarks.models.qlstm import QLSTM
 from qml_benchmarks.models.lstm import LSTM
-from qml_benchmarks.models.mlp import MLP
+from qml_benchmarks.models.feedforward import Feedforward 
 from qml_benchmarks.models.xgboost import XGBoost
 from qml_benchmarks.models.svm import SVM
 __all__ = [
@@ -76,8 +76,7 @@ __all__ = [
     "IQPKernelClassifier",
     "IQPVariationalClassifier",
     "QLSTM",
-    "LSTM",
-    "MLP",
+    "Feedforward",
     "XGBoost",
     "SVM",
     "ProjectedQuantumKernel",

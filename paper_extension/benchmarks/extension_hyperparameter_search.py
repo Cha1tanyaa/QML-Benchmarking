@@ -107,7 +107,7 @@ def main():
     #------------------------------------------------------------
 
     #---------- Custom Settings for Specific Models and Datasets ----------
-    phase1_models_config = {"MLP", "SVM", "XGBoost"}
+    phase1_models_config = {"Feedforward", "SVM", "XGBoost"}
     phase2_models_config = {"LSTM", "QLSTM"}
     phase2_dataset_paths = {"stock_tickerAAPL_train.csv"}
     phase3_dataset_paths = {"credit_card_fraud_train.csv"} 
