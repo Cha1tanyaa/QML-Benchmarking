@@ -1,11 +1,11 @@
 #!/bin/bash
-#SBATCH --job-name=inf22029_Quantum_Machine_Learning   # Name des Jobs
-##SBATCH --partition=gpu                 # Partition für GPU-Aufgaben
-#SBATCH --gres=gpu:0                    # Anzahl der benötigten GPUs
-#SBATCH --cpus-per-task=32              # Anzahl der CPU-Kerne
-#SBATCH --mem=32G                       # Arbeitsspeicher
-#SBATCH --time=10:00:00                 # Maximale Laufzeit
-#SBATCH --output=slurm-%j.out.          # Ausgabeprotokoll (%j = Job-ID)
+#SBATCH --job-name=   # Jobname
+##SBATCH --partition=gpu                 # Partition for GPU jobs
+#SBATCH --gres=gpu:0                    # Amount of GPUs
+#SBATCH --cpus-per-task=32              # Amount of CPU cores
+#SBATCH --mem=32G                       # Amount of memory
+#SBATCH --time=10:00:00                 # Maximum runtime
+#SBATCH --output=slurm-%j.out.          # Output log (%j = Job-ID)
 
 # Define variables
 IMAGE_NAME="Quantum_Machine_Learning"
