@@ -1,14 +1,13 @@
 # Benchmarking for quantum machine learning models
 
-This repository contains tools to compare the performance of near-term quantum machine learning (QML)
-as well as standard classical machine learning models on supervised learning tasks. 
+This repository contains a toolkit to compare the performance of near-term quantum machine learning (QML)
+with standard classical machine learning models on supervised learning tasks. 
 
 It is based on pipelines using [Pennylane](https://pennylane.ai/) for the simulation of quantum circuits, 
 [JAX](https://jax.readthedocs.io/en/latest/index.html) for training, 
 and [scikit-learn](https://scikit-learn.org/) for the benchmarking workflows. 
 
-Version 0.1 of the code can be used to reproduce the results in the study 
-"Better than classical? The subtle art of benchmarking quantum machine learning models".
+Version 0.1 of the code can be used to reproduce the results in the study "Better than classical? The subtle art of benchmarking quantum machine learning models".
 
 ## Original Work and Contributions
 
