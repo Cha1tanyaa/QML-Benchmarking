@@ -7,8 +7,6 @@ It is based on pipelines using [Pennylane](https://pennylane.ai/) for the simula
 [JAX](https://jax.readthedocs.io/en/latest/index.html) for training, 
 and [scikit-learn](https://scikit-learn.org/) for the benchmarking workflows. 
 
-Version 0.1 of the code can be used to reproduce the results in the study "Better than classical? The subtle art of benchmarking quantum machine learning models".
-
 ## Original Work and Contributions
 
 This repository builds upon the framework and tools originally developed by XANADU for their study "Better than classical? The subtle art of benchmarking quantum machine learning models". The original code (Version 0.1) provides the foundation for quantum circuit & classical simulation, training, and benchmarking workflows.
