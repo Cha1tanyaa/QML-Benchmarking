@@ -17,6 +17,7 @@ import jax
 import jax.numpy as jnp
 import optax
 import flax.linen as nn
+import pennylane as qml
 from sklearn.preprocessing import StandardScaler
 from sklearn.base import BaseEstimator, RegressorMixin
 from qml_benchmarks.model_utils import train
@@ -26,11 +27,33 @@ jax.config.update("jax_enable_x64", True)
 class QuantumLayer(nn.Module):
     hidden_dim: int
 
+    def setup(self):
+        self.n_qubits = min(self.hidden_dim, 16)
+        self.dev = qml.device("default.qubit", wires=self.n_qubits)
+
+        @qml.qnode(self.dev, interface="jax", diff_method="best")
+        def quantum_circuit(inputs, weights):
+            """
+            Quantum circuit.
+            inputs: scaled hidden state from LSTM, shape (n_qubits,)
+            weights: trainable parameters for the quantum gates, shape (n_qubits,)
+            """
+            for i in range(self.n_qubits):
+                qml.RY(inputs[i], wires=i)
+                qml.RX(weights[i], wires=i)
+            return qml.expval(qml.PauliZ(0))
+
+        self.qc = quantum_circuit
+        self.vmap_qc = jax.vmap(self.qc, in_axes=(0, None), out_axes=0)
+
     @nn.compact
     def __call__(self, x):
         theta = self.param("theta", nn.initializers.normal(), (self.hidden_dim,))
-        out = jnp.cos(x + theta)
-        out = nn.Dense(features=self.hidden_dim)(out)
+        scaled_x = x * jnp.pi
+        out = self.vmap_qc(scaled_x, theta)
+        out = jnp.asarray(out, dtype=x.dtype)
+        out = out[:, None]
+        out = nn.Dense(features=self.hidden_dim, kernel_init=nn.initializers.zeros)(out)
         return out
 
 class QLSTMCell(nn.Module):
@@ -72,13 +95,11 @@ class QLSTM(BaseEstimator, RegressorMixin): #Quantum LSTM classifier
         max_vmap=None,
         jit=True,
         random_state=42,
-        scaling=1.0,
     ):
         self.hidden_size = hidden_size
         self.seq_length = seq_length
         self.learning_rate = learning_rate
         self.max_steps = max_steps
-        self.scaling = scaling
         self.jit = jit
         self.convergence_interval = convergence_interval
         self.batch_size = batch_size
@@ -99,6 +120,7 @@ class QLSTM(BaseEstimator, RegressorMixin): #Quantum LSTM classifier
         return jax.random.PRNGKey(self.rng.integers(1000000))
 
     def initialize(self, n_features):
+        print(f"QLSTM.initialize called with hidden_size: {self.hidden_size}")
         self.qlstm = construct_qlstm(self.hidden_size, self.seq_length)
         self.forward = self.qlstm
         X0 = jnp.ones((1, self.seq_length, n_features))
@@ -156,13 +178,10 @@ class QLSTM(BaseEstimator, RegressorMixin): #Quantum LSTM classifier
         predictions = self.forward.apply(self.params_, X_jax)
         return np.array(predictions.squeeze(-1))
 
-    def transform(self, X):
+    def transform(self, X):     
         if X.ndim == 2:
             X = X[:, np.newaxis, :]
         nsamples, seq_length, n_features = X.shape
         X_reshaped = X.reshape(-1, n_features)
-        if self.scaler is None:
-            self.scaler = StandardScaler()
-            self.scaler.fit(X_reshaped)
         X_scaled = self.scaler.transform(X_reshaped).reshape(nsamples, seq_length, n_features)
         return jnp.array(X_scaled)
