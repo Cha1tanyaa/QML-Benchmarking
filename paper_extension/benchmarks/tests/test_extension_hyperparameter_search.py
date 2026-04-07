@@ -125,10 +125,10 @@ def test_run_single_search_file_not_found_error(mocker, mock_paths, mock_logging
     assert result is False
     mock_logging["error"].assert_any_call(f"Error: The script {mock_paths['runner']} was not found. Ensure the path is correct.")
 
-def test_run_single_search_unexpected_error(mocker, mock_paths, mock_logging):
-    """Tests run_single_search with a generic unexpected error during subprocess.run."""
+def test_run_single_search_os_error(mocker, mock_paths, mock_logging):
+    """Tests run_single_search when subprocess.run raises an OS-level error."""
     mock_subprocess_run = mocker.patch("subprocess.run")
-    unexpected_exception = Exception("Unexpected boom!")
+    unexpected_exception = OSError("Unexpected boom!")
     mock_subprocess_run.side_effect = unexpected_exception
 
     clf_name = "UnexpectedFailClassifier"

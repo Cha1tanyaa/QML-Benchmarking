@@ -17,28 +17,42 @@
 
 """Utility functions for hyperparameter search"""
 
+import ast
 import csv
+from pathlib import Path
+from typing import Any
+
 import numpy as np
 import pandas as pd
 
 
-def read_data(path):
+def read_data(path: str | Path) -> tuple[np.ndarray, np.ndarray]:
     """Read data from a csv file where each row is a data sample.
     The columns are the input features and the last column specifies a label.
 
     Return a 2-d array of inputs and an array of labels, X,y.
 
     Args:
-        path (str): path to data
+        path (str | Path): path to data
     """
     # The data is stored on a CSV file with the last column being the label
-    data = pd.read_csv(path, header=None)
+    csv_path = Path(path)
+    if not csv_path.exists():
+        raise FileNotFoundError(f"Dataset file not found: {csv_path}")
+
+    data = pd.read_csv(csv_path, header=None)
+    if data.shape[1] < 2:
+        raise ValueError(f"Dataset must contain at least one feature column and one label column: {csv_path}")
+
     X = data.iloc[:, :-1].values
     y = data.iloc[:, -1].values
     return X, y
 
 
-def construct_hyperparameter_grid(hyperparameter_settings, classifier_name):
+def construct_hyperparameter_grid(
+    hyperparameter_settings: dict[str, dict[str, dict[str, Any]]],
+    classifier_name: str,
+) -> dict[str, np.ndarray | list[Any]]:
     """Constructs a grid of hyperparameters from the dictionary of hyperparameter
     settings for a given classifier.
 
@@ -49,6 +63,9 @@ def construct_hyperparameter_grid(hyperparameter_settings, classifier_name):
     Returns:
         hyperparameter_grid (dict): A grid of hyperparameters to search
     """
+    if classifier_name not in hyperparameter_settings:
+        raise KeyError(f"No hyperparameter settings found for classifier '{classifier_name}'")
+
     hyperparams = hyperparameter_settings[classifier_name].keys()
     hyperparameter_grid = {}
 
@@ -57,33 +74,76 @@ def construct_hyperparameter_grid(hyperparameter_settings, classifier_name):
             val = hyperparameter_settings[classifier_name][hyperparam]["val"]
             dtype = hyperparameter_settings[classifier_name][hyperparam]["dtype"]
             if dtype == "tuple":
-                hyperparameter_grid[hyperparam] = [eval(v) for v in val]
+                hyperparameter_grid[hyperparam] = [ast.literal_eval(v) for v in val]
             else:
                 hyperparameter_grid[hyperparam] = np.array(val, dtype=dtype)
 
     return hyperparameter_grid
 
 
-def csv_to_dict(file_path):
+def _parse_csv_value(value: str) -> Any:
+    """Parse scalar and literal values from CSV text without executing code."""
+    value = value.strip()
+    lowered = value.lower()
+
+    if lowered == "true":
+        return True
+    if lowered == "false":
+        return False
+    if lowered == "none":
+        return None
+
+    try:
+        return int(value)
+    except ValueError:
+        pass
+
+    try:
+        return float(value)
+    except ValueError:
+        pass
+
+    try:
+        return ast.literal_eval(value)
+    except (ValueError, SyntaxError):
+        return value
+
+
+def parse_hyperparameters(values: dict[str, Any] | None) -> dict[str, Any]:
+    """Normalize a hyperparameter dictionary parsed from a CSV source."""
+    if values is None:
+        return {}
+
+    parsed: dict[str, Any] = {}
+    for key, value in values.items():
+        if isinstance(value, str):
+            parsed[key] = _parse_csv_value(value)
+        elif isinstance(value, float) and value.is_integer():
+            parsed[key] = int(value)
+        else:
+            parsed[key] = value
+    return parsed
+
+
+def csv_to_dict(file_path: str | Path) -> dict[str, Any]:
     """Read a csv file and interpret the content as a dictionary.
 
     Args:
-        file_path (str): path to csv file
+        file_path (str | Path): path to csv file
     """
-    dict = {}
-    with open(file_path, 'r') as csvfile:
+    path = Path(file_path)
+    if not path.exists():
+        raise FileNotFoundError(f"Hyperparameter file not found: {path}")
+
+    parsed_values: dict[str, Any] = {}
+    with path.open("r", newline="", encoding="utf-8") as csvfile:
         csvreader = csv.reader(csvfile)
         # Skip the first line
-        next(csvreader)
+        next(csvreader, None)
         for row in csvreader:
+            if len(row) < 2:
+                continue
             hyperparameter, value = row
-            # Check if the value is numeric and convert it to int or float accordingly
-            try:
-                if '.' in value:
-                    value = float(value)
-                else:
-                    value = int(value)
-            except ValueError:
-                pass  # If conversion is not possible, keep the value as a string
-            dict[hyperparameter] = value
-    return dict
+            parsed_values[hyperparameter] = _parse_csv_value(value)
+
+    return parsed_values

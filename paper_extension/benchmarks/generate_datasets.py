@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import sys
+import logging
 from pathlib import Path
 import numpy as np
 import pandas as pd
@@ -24,6 +25,8 @@ repo = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(repo / "src"))
 
 import qml_benchmarks.data as data_module
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 # --------------------------------------------------------------------
 # DEFAULT_PARAMS defines for each dataset:
@@ -137,12 +140,23 @@ DEFAULT_PARAMS = {
 }
 
 
-class generate_datasets:
+class GenerateDatasets:
+    """Generate all configured benchmark datasets to CSV files."""
+
     def __init__(self, outdir: Path, params: dict = DEFAULT_PARAMS):
         self.outdir = outdir
         self.params = params
         self.outdir.mkdir(parents=True, exist_ok=True)
         self.base_seed = 42
+
+    def _seed(self, cfg: dict) -> int:
+        seed = self.base_seed + cfg.get("random_state_offset", 0)
+        np.random.seed(seed)
+        return seed
+
+    @staticmethod
+    def _suffix_from_params(keys: list[str], params: dict) -> str:
+        return "_".join(f"{k}{params[k]}" for k in keys)
 
     def bars_and_stripes(self):
         grp = "bars_and_stripes"
@@ -152,8 +166,7 @@ class generate_datasets:
         subdir.mkdir(exist_ok=True)
 
         for cfg in cfgs:
-            seed = self.base_seed + cfg.get("random_state_offset", 0)
-            np.random.seed(seed)
+            self._seed(cfg)
 
             width = cfg["iter_params"]["width"]
             height = cfg["iter_params"]["height"]
@@ -164,7 +177,7 @@ class generate_datasets:
             X_tr, y_tr = gen_fn(n_tr, height, width, noise)
             X_te, y_te = gen_fn(n_te, height, width, noise)
 
-            suffix = "_".join(f"{k}{cfg['iter_params'][k]}" for k in cfg["filename_identifier_params"])
+            suffix = self._suffix_from_params(cfg["filename_identifier_params"], cfg["iter_params"])
             ft = subdir / f"bars_and_stripes_{suffix}_train.csv"
             fs = subdir / f"bars_and_stripes_{suffix}_test.csv"
 
@@ -179,8 +192,7 @@ class generate_datasets:
         subdir.mkdir(exist_ok=True)
 
         for cfg in cfgs:
-            seed = self.base_seed + cfg.get("random_state_offset", 0)
-            np.random.seed(seed)
+            seed = self._seed(cfg)
 
             n_tot = cfg["n_samples_total"]
             n_feat = cfg["iter_params"]["n_features"]
@@ -189,7 +201,7 @@ class generate_datasets:
             X, y = gen_fn(n_tot, n_feat, margin)
             X_tr, X_te, y_tr, y_te = train_test_split(X, y, test_size=0.2, random_state=seed)
 
-            suffix = "_".join(f"{k}{cfg['iter_params'][k]}" for k in cfg["filename_identifier_params"])
+            suffix = self._suffix_from_params(cfg["filename_identifier_params"], cfg["iter_params"])
             ft = subdir / f"linsep_{suffix}_train.csv"
             fs = subdir / f"linsep_{suffix}_test.csv"
 
@@ -204,8 +216,7 @@ class generate_datasets:
         subdir.mkdir(exist_ok=True)
 
         for cfg in cfgs:
-            seed = self.base_seed + cfg.get("random_state_offset", 0)
-            np.random.seed(seed)
+            seed = self._seed(cfg)
 
             n_tot = cfg["n_samples_total"]
             n_feat = cfg["iter_params"]["n_features"]
@@ -214,10 +225,8 @@ class generate_datasets:
             X, y = gen_fn(n_tot, n_feat, m_dim)
             X_tr, X_te, y_tr, y_te = train_test_split(X, y, test_size=0.2, random_state=seed)
 
-            suffix = "_".join(
-                f"{k}{(cfg['iter_params'] | cfg['static_params'])[k]}"
-                for k in cfg["filename_identifier_params"]
-            )
+            all_params = cfg["iter_params"] | cfg["static_params"]
+            suffix = self._suffix_from_params(cfg["filename_identifier_params"], all_params)
             ft = subdir / f"hmm_{suffix}_train.csv"
             fs = subdir / f"hmm_{suffix}_test.csv"
 
@@ -232,15 +241,14 @@ class generate_datasets:
         subdir.mkdir(exist_ok=True)
 
         for cfg in cfgs:
-            seed = self.base_seed + cfg.get("random_state_offset", 0)
-            np.random.seed(seed)
+            seed = self._seed(cfg)
 
             n_tot = cfg["n_samples_total"]
-            params = {**cfg["iter_params"], **cfg["static_params"]}
+            params = cfg["iter_params"] | cfg["static_params"]
             X, y = gen_fn(n_tot, **params)
             X_tr, X_te, y_tr, y_te = train_test_split(X, y, test_size=0.2, random_state=seed)
 
-            suffix = "_".join(f"{k}{params[k]}" for k in cfg["filename_identifier_params"])
+            suffix = self._suffix_from_params(cfg["filename_identifier_params"], params)
             ft = subdir / f"hyperplanes_{suffix}_train.csv"
             fs = subdir / f"hyperplanes_{suffix}_test.csv"
 
@@ -255,8 +263,7 @@ class generate_datasets:
         subdir.mkdir(exist_ok=True)
 
         for cfg in cfgs:
-            seed = self.base_seed + cfg.get("random_state_offset", 0)
-            np.random.seed(seed)
+            seed = self._seed(cfg)
 
             sp = cfg["static_params"]
             X, y = gen_fn(sp["ticker"], sp["start"], sp["end"])
@@ -265,7 +272,7 @@ class generate_datasets:
                 X, y, test_size=0.2, shuffle=shuffle, random_state=seed
             )
 
-            suffix = "_".join(f"{k}{sp[k]}" for k in cfg["filename_identifier_params"])
+            suffix = self._suffix_from_params(cfg["filename_identifier_params"], sp)
             ft = subdir / f"stock_{suffix}_train.csv"
             fs = subdir / f"stock_{suffix}_test.csv"
 
@@ -286,11 +293,10 @@ class generate_datasets:
         subdir.mkdir(exist_ok=True)
 
         for cfg in cfgs:
-            seed = self.base_seed + cfg.get("random_state_offset", 0)
-            np.random.seed(seed)
+            seed = self._seed(cfg)
 
             n_tot = cfg["n_samples_total"]
-            params = {**cfg["iter_params"], **cfg["static_params"]}
+            params = cfg["iter_params"] | cfg["static_params"]
             X, y = gen_fn(n_samples=n_tot, **params)
             X_tr, X_te, y_tr, y_te = train_test_split(X, y, test_size=0.2, random_state=seed, stratify=y)
 
@@ -317,13 +323,12 @@ class generate_datasets:
         subdir.mkdir(exist_ok=True)
 
         for cfg in cfgs:
-            seed = self.base_seed + cfg.get("random_state_offset", 0)
-            np.random.seed(seed)
+            seed = self._seed(cfg)
             X, y = gen_fn()
             sample_percentage = cfg.get("sample_percentage", 1.0)
 
             if sample_percentage < 1.0 and 0 < sample_percentage:
-                print(f"Original dataset size: {X.shape[0]} samples.")
+                logging.info("Original dataset size: %s samples.", X.shape[0])
                 X_sampled, _, y_sampled, _ = train_test_split(
                     X, y, 
                     train_size=sample_percentage, 
@@ -331,19 +336,19 @@ class generate_datasets:
                     stratify=y
                 )
                 X, y = X_sampled, y_sampled
-                print(f"Subsampled to {sample_percentage*100}%: {X.shape[0]} samples.")
+                logging.info("Subsampled to %s%%: %s samples.", sample_percentage * 100, X.shape[0])
 
             pca_n_components = cfg.get("pca_n_components")
             if isinstance(pca_n_components, int) and pca_n_components > 0 and pca_n_components < X.shape[1]:
                 pca = PCA(n_components=pca_n_components, random_state=seed)
                 X = pca.fit_transform(X)
-                print(f"Dataset shape after PCA: {X.shape}")
+                logging.info("Dataset shape after PCA: %s", X.shape)
 
             select_k_best_features = cfg.get("select_k_best_features")
             if isinstance(select_k_best_features, int) and select_k_best_features > 0 and select_k_best_features < X.shape[1]:
                 selector = SelectKBest(score_func=f_classif, k=select_k_best_features)
                 X = selector.fit_transform(X, y)
-                print(f"Dataset shape after SelectKBest: {X.shape}")
+                logging.info("Dataset shape after SelectKBest: %s", X.shape)
 
             test_size = cfg.get("split_test_size", 0.2)
             X_tr, X_te, y_tr, y_te = train_test_split(X, y, test_size=test_size, random_state=seed, stratify=y)
@@ -358,11 +363,18 @@ class generate_datasets:
             pd.DataFrame(np.c_[X_te, y_te]).to_csv(fs, index=False, header=False)
 
 
-def main(outdir: Path, params: dict = DEFAULT_PARAMS):
-    gen = generate_datasets(outdir, params)
+def main(outdir: Path, params: dict = DEFAULT_PARAMS) -> None:
+    """Generate all configured datasets into the output directory."""
+    gen = GenerateDatasets(outdir, params)
     for ds_name in params:
+        if not hasattr(gen, ds_name):
+            raise AttributeError(f"No generator method implemented for dataset key: {ds_name}")
         fn = getattr(gen, ds_name)
         fn()
+
+
+# Backward-compatible alias for external imports that may use the old class name.
+generate_datasets = GenerateDatasets
 
 
 if __name__ == "__main__":

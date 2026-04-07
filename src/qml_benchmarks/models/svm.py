@@ -74,6 +74,9 @@ class SVM(BaseEstimator, ClassifierMixin):
         self.decision_function = decision
 
     def fit(self, X, y):
+        if X.shape[0] < 2:
+            raise ValueError("SVM requires at least two samples to fit.")
+
         self.initialize(X.shape[1], classes=np.unique(y))
         X = self.scaler_.fit_transform(X) * self.scaling
         y = jnp.where(y == self.classes_[0], -1, 1)
@@ -101,11 +104,15 @@ class SVM(BaseEstimator, ClassifierMixin):
         return self
 
     def predict(self, X):
+        if self.params_ is None or self.scaler_ is None:
+            raise ValueError("This SVM instance is not fitted yet. Call 'fit' before prediction.")
         X = self.scaler_.transform(X) * self.scaling
         scores = self.decision_function(self.params_, X)
         return np.where(scores >= 0, self.classes_[1], self.classes_[0])
 
     def predict_proba(self, X):
+        if self.params_ is None or self.scaler_ is None:
+            raise ValueError("This SVM instance is not fitted yet. Call 'fit' before prediction.")
         X = self.scaler_.transform(X) * self.scaling
         scores = self.decision_function(self.params_, X)
         prob_pos = jax.nn.sigmoid(scores)

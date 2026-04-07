@@ -35,6 +35,19 @@ from sklearn.preprocessing import StandardScaler
 def generate_mnist(
     digitA, digitB, preprocessing, n_features=None, n_samples=None, height=None
 ):
+    """Generate binary MNIST splits with configurable preprocessing.
+
+    Args:
+        digitA (int): First class digit.
+        digitB (int): Second class digit.
+        preprocessing (str): One of {"cg", "pca", "pca-"}.
+        n_features (int | None): Number of PCA features when using "pca" or "pca-".
+        n_samples (int | None): Number of subsampled points per split for "pca-".
+        height (int | None): Output height for resized images in "cg" mode.
+    """
+    if preprocessing not in {"cg", "pca", "pca-"}:
+        raise ValueError("preprocessing must be one of {'cg', 'pca', 'pca-'}")
+
     if preprocessing == "cg":
 
         mnist_train = torchvision.datasets.MNIST(

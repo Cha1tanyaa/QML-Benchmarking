@@ -17,15 +17,16 @@
 
 """Utility functions shared by models."""
 
-import operator
-from functools import reduce
 import logging
 import time
-import numpy as np
-import optax
+import operator
+import warnings
+from functools import reduce
+
 import jax
 import jax.numpy as jnp
-import warnings
+import numpy as np
+import optax
 from sklearn.exceptions import ConvergenceWarning
 from sklearn.utils import gen_batches
 
@@ -59,8 +60,8 @@ def train(
         params (dict): The new parameters after training has completed.
     """
 
-    if not model.batch_size / model.max_vmap % 1 == 0:
-        raise Exception("Batch size must be multiple of max_vmap.")
+    if model.batch_size % model.max_vmap != 0:
+        raise ValueError("Batch size must be a multiple of max_vmap.")
 
     params = model.params_
     opt = optimizer(learning_rate=model.learning_rate)
@@ -86,7 +87,7 @@ def train(
 
     loss_history = []
     converged = False
-    start = time.time()
+    start = time.perf_counter()
     for step in range(model.max_steps):
         key = random_key_generator()
         X_batch, y_batch = get_batch(X, y, key, batch_size=model.batch_size)
@@ -95,8 +96,10 @@ def train(
         logging.debug(f"{step} - loss: {loss_val}")
 
         if np.isnan(loss_val):
-            logging.info(f"nan encountered. Training aborted.")
-            break
+            logging.error("NaN encountered at training step %s. Training aborted.", step)
+            raise RuntimeError(
+                f"Model {model.__class__.__name__} produced NaN loss at step {step}."
+            )
 
         # decide convergence
         if step > 2 * convergence_interval:
@@ -114,13 +117,14 @@ def train(
                 converged = True
                 break
 
-    end = time.time()
+    end = time.perf_counter()
     loss_history = np.array(loss_history)
-    model.loss_history_ = loss_history / np.max(np.abs(loss_history))
+    max_abs_loss = np.max(np.abs(loss_history)) if loss_history.size else 0.0
+    model.loss_history_ = loss_history if max_abs_loss == 0 else loss_history / max_abs_loss
     model.training_time_ = end - start
 
     if not converged:
-        print("Loss did not converge:", loss_history)
+        logging.warning("Loss did not converge for %s.", model.__class__.__name__)
         warnings.warn(
             f"Model {model.__class__.__name__} has not converged after the maximum number of {model.max_steps} steps.",
             ConvergenceWarning
@@ -143,34 +147,34 @@ def get_batch(X, y, rnd_key, batch_size=32):
         array[float]: A batch of input data shape (batch_size, n_features)
         array[float]: A batch of target labels shaped (batch_size,)
     """
-    all_indices = jnp.array(range(len(X)))
+    all_indices = jnp.arange(len(X))
     rnd_indices = jax.random.choice(
         key=rnd_key, a=all_indices, shape=(batch_size,), replace=True
     )
     return X[rnd_indices], y[rnd_indices]
 
 
-def get_from_dict(dict, key_list):
+def get_from_dict(mapping, key_list):
     """
     Access a value from a nested dictionary.
     Inspired by https://stackoverflow.com/questions/14692690/access-nested-dictionary-items-via-a-list-of-keys
 
     Args:
-        dict (dict): nested dictionary
+        mapping (dict): nested dictionary
         key_list (list): list of keys to be accessed
 
     Returns:
          the requested value
     """
-    return reduce(operator.getitem, key_list, dict)
+    return reduce(operator.getitem, key_list, mapping)
 
 
-def set_in_dict(dict, keys, value):
+def set_in_dict(mapping, keys, value):
     """
     Set a value in a nested dictionary.
 
     Args:
-        dict (dict): nested dictionary
+        mapping (dict): nested dictionary
         keys (list): list of keys in nested dictionary
         value (Any): value to be set
 
@@ -178,11 +182,11 @@ def set_in_dict(dict, keys, value):
         nested dictionary with new value
     """
     for key in keys[:-1]:
-        dict = dict.setdefault(key, {})
-    dict[keys[-1]] = value
+        mapping = mapping.setdefault(key, {})
+    mapping[keys[-1]] = value
 
 
-def get_nested_keys(d, parent_keys=[]):
+def get_nested_keys(d, parent_keys=None):
     """
     Returns the nested keys of a nested dictionary.
 
@@ -192,6 +196,9 @@ def get_nested_keys(d, parent_keys=[]):
     Returns:
         list where each element is a list of nested keys
     """
+    if parent_keys is None:
+        parent_keys = []
+
     keys_list = []
     for key, value in d.items():
         current_keys = parent_keys + [key]
@@ -223,8 +230,8 @@ def chunk_vmapped_fn(vmapped_fn, start, max_vmap):
         batch_len = len(args[start])
         batch_slices = list(gen_batches(batch_len, max_vmap))
         res = [
-            vmapped_fn(*args[:start], *[arg[slice] for arg in args[start:]])
-            for slice in batch_slices
+            vmapped_fn(*args[:start], *[arg[batch_slice] for arg in args[start:]])
+            for batch_slice in batch_slices
         ]
         # jnp.concatenate needs to act on arrays with the same shape, so pad the last array if necessary
         if batch_len / max_vmap % 1 != 0.0:
@@ -260,7 +267,7 @@ def chunk_grad(grad_fn, max_vmap):
 
     def chunked_grad(params, X, y):
         batch_slices = list(gen_batches(len(X), max_vmap))
-        grads = [grad_fn(params, X[slice], y[slice]) for slice in batch_slices]
+        grads = [grad_fn(params, X[batch_slice], y[batch_slice]) for batch_slice in batch_slices]
         grad_dict = {}
         for key_list in get_nested_keys(params):
             set_in_dict(
@@ -292,7 +299,7 @@ def chunk_loss(loss_fn, max_vmap):
     def chunked_loss(params, X, y):
         batch_slices = list(gen_batches(len(X), max_vmap))
         res = jnp.array(
-            [loss_fn(params, *[X[slice], y[slice]]) for slice in batch_slices]
+            [loss_fn(params, *[X[batch_slice], y[batch_slice]]) for batch_slice in batch_slices]
         )
         return jnp.mean(res)
 

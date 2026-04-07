@@ -128,7 +128,8 @@ class VanillaQNN(BaseEstimator, ClassifierMixin):
 
         self.classes_ = classes
         self.n_classes_ = len(self.classes_)
-        assert self.n_classes_ == 2
+        if self.n_classes_ != 2:
+            raise ValueError("VanillaQNN only supports binary classification.")
         #assert 1 in self.classes_ and -1 in self.classes_
 
         self.n_features = n_features
@@ -199,6 +200,9 @@ class VanillaQNN(BaseEstimator, ClassifierMixin):
             y_pred_proba (np.ndarray): Predicted label probabilities of shape
             (n_samples, n_classes)
         """
+        if self.params_ is None or self.chunked_forward is None:
+            raise ValueError("This VanillaQNN instance is not fitted yet. Call 'fit' before prediction.")
+
         X = self.transform(X)
         predictions = self.chunked_forward(self.params_, X)
         predictions_2d = np.c_[(1 - predictions) / 2, (1 + predictions) / 2]

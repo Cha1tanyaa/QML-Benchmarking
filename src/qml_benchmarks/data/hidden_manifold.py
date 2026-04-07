@@ -62,7 +62,13 @@ def generate_hidden_manifold_model(n_samples, n_features, manifold_dimension):
     # post-process the labels to get balanced classes
     y = y - np.median(y)
     y = np.array([-1 if y_ < 0 else 1 for y_ in y])
-    assert len(X[y == 1]) == n_samples // 2
-    assert len(X[y == -1]) == n_samples // 2
+    num_positive = len(X[y == 1])
+    num_negative = len(X[y == -1])
+    expected = n_samples // 2
+    if num_positive != expected or num_negative != expected:
+        raise ValueError(
+            "Hidden manifold generation produced imbalanced classes: "
+            f"expected {expected}/{expected}, got {num_positive}/{num_negative}."
+        )
 
     return X, y

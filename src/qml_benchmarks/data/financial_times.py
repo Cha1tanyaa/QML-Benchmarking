@@ -28,6 +28,9 @@ def compute_rsi(series, window=14):
     Returns:
         pandas.Series: RSI values.
     """
+    if window <= 0:
+        raise ValueError("RSI window must be > 0.")
+
     delta = series.diff()
     gain = delta.where(delta > 0, 0)
     loss = -delta.where(delta < 0, 0)
@@ -41,6 +44,10 @@ def generate_stock_features_and_labels(ticker="AAPL", start="2010-01-01", end="2
     """
     Data generation procedure for financial time series data.
 
+    Note:
+        This function downloads live market data. Results can change over time and
+        should be cached externally when strict reproducibility is required.
+
     Args:
         ticker (str): Stock ticker symbol.
         start (str): Start date for historical data.
@@ -51,14 +58,16 @@ def generate_stock_features_and_labels(ticker="AAPL", start="2010-01-01", end="2
         y (ndarray): Array of labels (-1 corresponds to a price decrease, +1 to a price increase).
     """
     df = yf.download(ticker, start=start, end=end, interval="1d")
+    if df.empty:
+        raise ValueError(
+            f"No data returned by yfinance for ticker='{ticker}' in range {start} to {end}."
+        )
 
     df["SMA_50"] = df["Close"].rolling(window=50).mean()
     df["SMA_200"] = df["Close"].rolling(window=200).mean()
     df["RSI_14"] = compute_rsi(df["Close"], window=14)
 
     df["target"] = df["Close"].shift(-1)
-
-    df.dropna(inplace=True)
 
     df.dropna(inplace=True)
 

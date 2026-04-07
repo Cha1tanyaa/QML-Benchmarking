@@ -31,13 +31,29 @@ def generate_credit_card_fraud_features_and_labels(
         Tuple[np.ndarray, np.ndarray]: A tuple containing the feature matrix (X)
                                        and the target vector (y).
     """
-    df = pd.read_csv(
-        file_path,
-        encoding=None,
-        sep=",",
-        engine="python",
-        on_bad_lines="skip"
-    )
+    if not file_path.exists():
+        raise FileNotFoundError(f"Credit card fraud dataset not found: {file_path}")
+
+    try:
+        df = pd.read_csv(
+            file_path,
+            encoding="utf-8",
+            sep=",",
+            engine="python",
+            on_bad_lines="skip"
+        )
+    except UnicodeDecodeError:
+        # Fallback keeps compatibility with rare non-UTF8 exports.
+        df = pd.read_csv(
+            file_path,
+            encoding="latin1",
+            sep=",",
+            engine="python",
+            on_bad_lines="skip"
+        )
+
+    if "Class" not in df.columns:
+        raise ValueError("Expected 'Class' column in credit card fraud dataset.")
 
     X_df = df.drop('Class', axis=1)
     y_series = df['Class']

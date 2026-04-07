@@ -31,7 +31,14 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 #---------------------------------------
 
 #------------------- Helper Functions -------------------
-def filter_compatible_models(dataset_stem, all_model_names, image_models, general_purpose_models, sequence_models, synthetic_dataset_stems):
+def filter_compatible_models(
+    dataset_stem: str,
+    all_model_names: list[str],
+    image_models: set[str],
+    general_purpose_models: set[str],
+    sequence_models: set[str],
+    synthetic_dataset_stems: set[str],
+) -> list[str]:
     """
     Filters models based on dataset compatibility and hyperparameter settings.
 
@@ -46,13 +53,33 @@ def filter_compatible_models(dataset_stem, all_model_names, image_models, genera
     Returns:
         list: Compatible models for the given dataset.
     """
-    if any(synth_name in dataset_stem.lower() for synth_name in synthetic_dataset_stems):
-        return [m for m in all_model_names if m in image_models or m in general_purpose_models]
-    elif "stock" in dataset_stem.lower():
-        return [m for m in all_model_names if m in sequence_models or m in general_purpose_models]
+    dataset_lower = dataset_stem.lower()
+    if any(synth_name in dataset_lower for synth_name in synthetic_dataset_stems):
+        eligible = image_models | general_purpose_models
+        return [m for m in all_model_names if m in eligible]
+    if "stock" in dataset_lower:
+        eligible = sequence_models | general_purpose_models
+        return [m for m in all_model_names if m in eligible]
     else:
         logging.info(f"Dataset {dataset_stem} did not match specific patterns, trying general purpose models with defined hyperparameters.")
         return [m for m in all_model_names if m in general_purpose_models]
+
+
+def run_search(cmd: list[str], clf_name: str, dataset_name: str) -> None:
+    """Run one search command and raise a detailed error if it fails."""
+    try:
+        process = subprocess.run(cmd, check=True, text=True, encoding="utf-8", capture_output=True)
+    except subprocess.CalledProcessError as err:
+        logging.error("Hyperparameter search failed for %s on %s (exit code %s)", clf_name, dataset_name, err.returncode)
+        if err.stdout:
+            logging.error("stdout:\n%s", err.stdout)
+        if err.stderr:
+            logging.error("stderr:\n%s", err.stderr)
+        raise
+
+    logging.info("Successfully ran hyperparameter search for %s on %s.", clf_name, dataset_name)
+    if process.stdout:
+        logging.debug("Stdout for %s on %s:\n%s", clf_name, dataset_name, process.stdout.strip())
 #------------------- End of Helper Functions -------------------
 
 def main():
@@ -75,16 +102,16 @@ def main():
     #---------------------------------------------------
 
     #---------- Define Model Categories and Dataset Patterns ----------
-    image_models = ["ConvolutionalNeuralNetwork", "WeiNet", "QuanvolutionalNeuralNetwork"]
-    general_purpose_models = [
+    image_models = {"ConvolutionalNeuralNetwork", "WeiNet", "QuanvolutionalNeuralNetwork"}
+    general_purpose_models = {
         "SVM", "Feedforward", "XGBoost",
         "CircuitCentricClassifier", "DataReuploadingClassifier",
         "DressedQuantumCircuitClassifier", "IQPVariationalClassifier",
         "QuantumMetricLearner", "QuantumBoltzmannMachine",
         "TreeTensorClassifier", "IQPKernelClassifier", "ProjectedQuantumKernel",
         "QuantumKitchenSinks", "SeparableVariationalClassifier", "SeparableKernelClassifier"
-    ]
-    sequence_models = ["LSTM", "QLSTM"]
+    }
+    sequence_models = {"LSTM", "QLSTM"}
     synthetic_dataset_stems = {"linearly_separable", "hmm", "two_curves", "hidden_manifold"}
 
     dataset_files = list(datasets_dir.rglob("*.csv"))
@@ -125,10 +152,7 @@ def main():
 
             logging.info(f"Executing command: {' '.join(cmd)}")
 
-            process = subprocess.run(cmd, check=True, text=True, encoding='utf-8', capture_output=True)
-            logging.info(f"Successfully ran hyperparameter search for {clf_name} on {dataset_file_path.name}.")
-            if process.stdout:
-                logging.debug(f"Stdout for {clf_name} on {dataset_file_path.name}:\n{process.stdout.strip()}")
+            run_search(cmd, clf_name, dataset_file_path.name)
     #------------------------------------------------
 
 if __name__ == "__main__":

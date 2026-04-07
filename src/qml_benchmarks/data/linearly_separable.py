@@ -26,13 +26,18 @@ def generate_linearly_separable(n_samples, n_features, margin):
 
     w_true = np.ones(n_features)
 
-    # hack: sample more data than we need randomly from a hypercube
+    # Sample a larger candidate set because margin filtering can discard many points.
     X = 2 * np.random.rand(2 * n_samples, n_features) - 1
 
     # only retain data outside a margin
     X = [x for x in X if np.abs(np.dot(x, w_true)) > margin]
     X = X[:n_samples]
+    if len(X) < n_samples:
+        raise ValueError(
+            f"Could not generate {n_samples} samples with margin={margin}. "
+            f"Only {len(X)} samples remained after filtering."
+        )
 
     y = [np.dot(x, w_true) for x in X]
     y = [-1 if y_ > 0 else 1 for y_ in y]
-    return X, y
+    return np.asarray(X), np.asarray(y)
