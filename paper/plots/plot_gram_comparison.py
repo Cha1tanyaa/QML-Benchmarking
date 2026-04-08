@@ -21,7 +21,7 @@ import matplotlib.pyplot as plt
 import os
 import seaborn as sns
 from qml_benchmarks import models
-from qml_benchmarks.hyperparam_search_utils import read_data, csv_to_dict
+from qml_benchmarks.hyperparameter_search_utils import read_data, csv_to_dict
 
 os.makedirs("figures", exist_ok=True)
 

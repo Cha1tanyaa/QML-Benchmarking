@@ -45,7 +45,7 @@ docker run \
     -v $HOME/data:/data \
     -v $WORKING_DIR:/workspace \
     "$IMAGE_NAME:latest" \
-    python paper_extension/benchmarks/extension_hyperparameter_search.py.py &
+    python tools/benchmarking/orchestrate_search.py &
 
 # Get container PID
 CONTAINER_PID=$!

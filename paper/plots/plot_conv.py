@@ -1,4 +1,4 @@
-from qml_benchmarks.hyperparam_search_utils import read_data
+from qml_benchmarks.hyperparameter_search_utils import read_data
 import matplotlib.pyplot as plt
 import numpy as np
 from qml_benchmarks.models.quanvolutional_neural_network import QuanvolutionalNeuralNetwork

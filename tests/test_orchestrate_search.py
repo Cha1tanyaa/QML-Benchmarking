@@ -18,11 +18,11 @@ import subprocess
 from pathlib import Path
 from unittest.mock import MagicMock, call
 
-path_to_add_to_sys = Path(__file__).resolve().parents[3]
-if str(path_to_add_to_sys) not in sys.path:
-    sys.path.insert(0, str(path_to_add_to_sys))
+repo_root = Path(__file__).resolve().parents[1]
+if str(repo_root) not in sys.path:
+    sys.path.insert(0, str(repo_root))
 
-from paper_extension.benchmarks.extension_hyperparameter_search import run_single_search
+from tools.benchmarking.orchestrate_search import run_single_search
 
 #-------------------------- Pytest Fixtures --------------------------
 @pytest.fixture
@@ -38,10 +38,10 @@ def mock_paths():
 def mock_logging(mocker):
     """Mocks logging functions."""
     return {
-        "info": mocker.patch("paper_extension.benchmarks.extension_hyperparameter_search.logging.info"),
-        "error": mocker.patch("paper_extension.benchmarks.extension_hyperparameter_search.logging.error"),
-        "debug": mocker.patch("paper_extension.benchmarks.extension_hyperparameter_search.logging.debug"),
-        "warning": mocker.patch("paper_extension.benchmarks.extension_hyperparameter_search.logging.warning"),
+        "info": mocker.patch("tools.benchmarking.orchestrate_search.logging.info"),
+        "error": mocker.patch("tools.benchmarking.orchestrate_search.logging.error"),
+        "debug": mocker.patch("tools.benchmarking.orchestrate_search.logging.debug"),
+        "warning": mocker.patch("tools.benchmarking.orchestrate_search.logging.warning"),
     }
 #--------------------------------------------------------------------
 

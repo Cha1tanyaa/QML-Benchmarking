@@ -22,7 +22,9 @@ from sklearn.decomposition import PCA
 from sklearn.feature_selection import SelectKBest, f_classif
 
 repo = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(repo / "src"))
+src_path = repo / "src"
+if str(src_path) not in sys.path:
+    sys.path.insert(0, str(src_path))
 
 import qml_benchmarks.data as data_module
 
@@ -316,7 +318,7 @@ class GenerateDatasets:
     def credit_card_fraud(self):
         grp = "credit_card_fraud"
         cfgs = self.params[grp]["configurations"]
-        local_csv_path = repo / "paper_extension" / "datasets" / "creditcard.csv" 
+        local_csv_path = repo / "data" / "raw" / "extension_sources" / "creditcard.csv"
 
         gen_fn = lambda: data_module.generate_credit_card_fraud_features_and_labels(file_path=local_csv_path)
         subdir = self.outdir / self.params[grp]["base_filename_prefix"]
@@ -377,7 +379,11 @@ def main(outdir: Path, params: dict = DEFAULT_PARAMS) -> None:
 generate_datasets = GenerateDatasets
 
 
-if __name__ == "__main__":
-    root_dir = Path(__file__).resolve().parents[1]
-    outdir = root_dir / "datasets_generated"
+def cli() -> None:
+    """CLI entrypoint for extension dataset generation."""
+    outdir = repo / "data" / "generated" / "extension_datasets"
     main(outdir)
+
+
+if __name__ == "__main__":
+    cli()

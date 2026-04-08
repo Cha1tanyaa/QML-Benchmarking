@@ -28,3 +28,11 @@ dependencies = [
     "scipy"
 ]
 
+[project.scripts]
+qml-grid-search = "tools.hyperparameter_search.grid_search:main"
+qml-score-best = "tools.hyperparameter_search.score_best:main"
+qml-orchestrate-search = "tools.benchmarking.orchestrate_search:main"
+qml-benchmark-classification = "tools.benchmarking.run_classification:main"
+qml-benchmark-regression = "tools.benchmarking.run_regression:main"
+qml-generate-extension-datasets = "tools.data_generation.generate_extension_datasets:cli"
+

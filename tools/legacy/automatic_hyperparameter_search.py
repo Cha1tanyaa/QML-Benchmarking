@@ -83,9 +83,9 @@ def run_search(cmd: list[str], clf_name: str, dataset_name: str) -> None:
 #------------------- End of Helper Functions -------------------
 
 def main():
-    runner_script = repo / "scripts" / "run_hyperparameter_search.py"
-    datasets_dir = repo / "results" / "datasets_generated"
-    hyperparam_results_root = repo / "results" / "hyperparameter_search_results_auto"
+    runner_script = repo / "tools" / "hyperparameter_search" / "grid_search.py"
+    datasets_dir = repo / "data" / "generated" / "extension_datasets"
+    hyperparam_results_root = repo / "results" / "extension" / "auto_search"
     hyperparam_results_root.mkdir(parents=True, exist_ok=True)
 
     #---------- Discover Models and Datasets ----------

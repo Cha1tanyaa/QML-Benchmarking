@@ -26,6 +26,19 @@ import numpy as np
 import pandas as pd
 
 
+KNOWN_HYPERPARAMETER_HEADERS = {
+    "hyperparameter",
+    "parameter",
+    "param",
+    "name",
+}
+KNOWN_VALUE_HEADERS = {
+    "best_value",
+    "value",
+    "val",
+}
+
+
 def read_data(path: str | Path) -> tuple[np.ndarray, np.ndarray]:
     """Read data from a csv file where each row is a data sample.
     The columns are the input features and the last column specifies a label.
@@ -81,9 +94,15 @@ def construct_hyperparameter_grid(
     return hyperparameter_grid
 
 
-def _parse_csv_value(value: str) -> Any:
+def _parse_csv_value(value: Any) -> Any:
     """Parse scalar and literal values from CSV text without executing code."""
+    if not isinstance(value, str):
+        return value
+
     value = value.strip()
+    if value == "":
+        return value
+
     lowered = value.lower()
 
     if lowered == "true":
@@ -118,11 +137,24 @@ def parse_hyperparameters(values: dict[str, Any] | None) -> dict[str, Any]:
     for key, value in values.items():
         if isinstance(value, str):
             parsed[key] = _parse_csv_value(value)
+        elif isinstance(value, np.integer):
+            parsed[key] = int(value)
+        elif isinstance(value, np.floating):
+            parsed[key] = int(value) if float(value).is_integer() else float(value)
         elif isinstance(value, float) and value.is_integer():
             parsed[key] = int(value)
         else:
             parsed[key] = value
     return parsed
+
+
+def _is_header_row(row: list[str]) -> bool:
+    if len(row) < 2:
+        return False
+
+    first = row[0].strip().lower()
+    second = row[1].strip().lower()
+    return first in KNOWN_HYPERPARAMETER_HEADERS and second in KNOWN_VALUE_HEADERS
 
 
 def csv_to_dict(file_path: str | Path) -> dict[str, Any]:
@@ -138,12 +170,21 @@ def csv_to_dict(file_path: str | Path) -> dict[str, Any]:
     parsed_values: dict[str, Any] = {}
     with path.open("r", newline="", encoding="utf-8") as csvfile:
         csvreader = csv.reader(csvfile)
-        # Skip the first line
-        next(csvreader, None)
-        for row in csvreader:
+        first_row = next(csvreader, None)
+        if first_row is not None and not _is_header_row(first_row):
+            rows_iterable = [first_row, *csvreader]
+        else:
+            rows_iterable = csvreader
+
+        for row in rows_iterable:
             if len(row) < 2:
                 continue
-            hyperparameter, value = row
+            hyperparameter = row[0].strip()
+            if not hyperparameter:
+                continue
+
+            # Some generated CSV rows can include unquoted commas in values.
+            value = ",".join(row[1:]).strip()
             parsed_values[hyperparameter] = _parse_csv_value(value)
 
     return parsed_values

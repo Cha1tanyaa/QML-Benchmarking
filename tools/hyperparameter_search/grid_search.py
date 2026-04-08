@@ -20,6 +20,7 @@
 from __future__ import annotations
 
 import argparse
+import ast
 import logging
 import os
 import random
@@ -29,7 +30,7 @@ from importlib import import_module
 from pathlib import Path
 from typing import Any
 
-root = Path(__file__).resolve().parents[1]
+root = Path(__file__).resolve().parents[2]
 src = root / "src"
 sys.path.insert(0, str(src))
 
@@ -55,6 +56,25 @@ def _build_results_stem(classifier_name: str, dataset_path: Path) -> str:
     return f"{classifier_name}_{dataset_path.stem}_GridSearchCV"
 
 
+def _parse_cli_value(value: str) -> Any:
+    """Parse model-specific CLI overrides as literals when possible."""
+    lowered = value.strip().lower()
+    if lowered in {"true", "false", "none"}:
+        return {"true": True, "false": False, "none": None}[lowered]
+    try:
+        return int(value)
+    except ValueError:
+        pass
+    try:
+        return float(value)
+    except ValueError:
+        pass
+    try:
+        return ast.literal_eval(value)
+    except (ValueError, SyntaxError):
+        return value
+
+
 def _log_run_settings(args: argparse.Namespace, hyperparam_grid: dict[str, Any]) -> None:
     logging.info("Running hyperparameter search with classifier=%s dataset=%s", args.classifier_name, args.dataset_path)
     logging.info("Scoring metrics=%s refit=%s", args.hyperparameter_scoring, args.hyperparameter_refit)
@@ -68,7 +88,7 @@ def _load_classifier(classifier_name: str):
         raise ValueError(f"Unknown classifier '{classifier_name}' in qml_benchmarks.models") from err
 
 
-if __name__ == "__main__":
+def main() -> None:
     logging.info("cpu count: %s", os.cpu_count())
 
     # Create an argument parser
@@ -135,17 +155,17 @@ if __name__ == "__main__":
                                    args.dataset_path]):
         msg = "\n================================================================================"
         msg += "\nA classifier from qml.benchmarks.model and dataset path are required. E.g., \n \n"
-        msg += "python run_hyperparameter_search.py\n"
+        msg += "python tools/hyperparameter_search/grid_search.py\n"
         msg += "  --classifier-name DataReuploadingClassifier\n"
         msg += "  --dataset-path train.csv\n"
         msg += "\nCheck all arguments for the script with \n"
-        msg += "python run_hyperparameter_search.py --help\n"
+        msg += "python tools/hyperparameter_search/grid_search.py --help\n"
         msg += "================================================================================"
         raise ValueError(msg)
 
     import pandas as pd
     from sklearn.model_selection import GridSearchCV
-    from qml_benchmarks.hyperparam_search_utils import construct_hyperparameter_grid, read_data
+    from qml_benchmarks.hyperparameter_search_utils import construct_hyperparameter_grid, read_data
     from qml_benchmarks.hyperparameter_settings import hyper_parameter_settings
     
     # Add model specific arguments to override the default hyperparameter grid
@@ -153,19 +173,20 @@ if __name__ == "__main__":
         hyper_parameter_settings, args.classifier_name
     )
     for hyperparam in hyperparam_grid:
-        hp_type = type(hyperparam_grid[hyperparam][0])
-        parser.add_argument(f'--{hyperparam}',
-                            type=hp_type,
-                            nargs="+",
-                            default=hyperparam_grid[hyperparam],
-                            help=f'{hyperparam} grid values for {args.classifier_name}')
+        parser.add_argument(
+            f"--{hyperparam}",
+            type=str,
+            nargs="+",
+            default=None,
+            help=f"{hyperparam} grid values for {args.classifier_name}",
+        )
 
     args = parser.parse_args(unknown_args, namespace=args)
 
     for hyperparam in hyperparam_grid:
-        override = getattr(args, hyperparam)
-        if override is not None:
-            hyperparam_grid[hyperparam] = override
+        override_values = getattr(args, hyperparam)
+        if override_values is not None:
+            hyperparam_grid[hyperparam] = [_parse_cli_value(item) for item in override_values]
     _log_run_settings(args, hyperparam_grid)
 
     experiment_path = Path(args.results_path)
@@ -249,3 +270,7 @@ if __name__ == "__main__":
 
     # Save best hyperparameters to a CSV file
     best_df.to_csv(results_path / f"{results_filename_stem}-best-hyperparameters.csv", index=False)
+
+
+if __name__ == "__main__":
+    main()

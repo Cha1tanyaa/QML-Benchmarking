@@ -24,13 +24,13 @@ import sys
 from importlib import import_module
 from pathlib import Path
 
-root = Path(__file__).resolve().parents[1]
+root = Path(__file__).resolve().parents[2]
 src = root / "src"
 if str(src) not in sys.path:
     sys.path.insert(0, str(src))
 
 import pandas as pd
-from qml_benchmarks.hyperparam_search_utils import csv_to_dict, parse_hyperparameters, read_data
+from qml_benchmarks.hyperparameter_search_utils import csv_to_dict, parse_hyperparameters, read_data
 
 random.seed(42)
 
@@ -58,12 +58,12 @@ def _require_args(args: argparse.Namespace) -> None:
     if any(arg is None for arg in [args.classifier_name, args.trainset_path, args.testset_path]):
         msg = "\n================================================================================"
         msg += "\nA classifier from qml.benchmarks.model and dataset path are required. E.g., \n \n"
-        msg += "python score_with_best_hyperparameters.py\n"
+        msg += "python tools/hyperparameter_search/score_best.py\n"
         msg += "  --classifier-name DataReuploadingClassifier\n"
         msg += "  --trainset-path my_train_data.csv\n"
         msg += "  --testset-path my_test_data.csv\n"
         msg += "\nCheck all arguments for the script with \n"
-        msg += "python score_with_best_hyperparameters.py --help\n"
+        msg += "python tools/hyperparameter_search/score_best.py --help\n"
         msg += "================================================================================"
         raise ValueError(msg)
 
@@ -75,7 +75,7 @@ def _load_classifier(classifier_name: str):
         raise ValueError(f"Unknown classifier '{classifier_name}' in qml_benchmarks.models") from err
 
 
-if __name__ == "__main__":
+def main() -> None:
     logging.info("cpu count: %s", os.cpu_count())
 
     # Create an argument parser
@@ -187,3 +187,7 @@ if __name__ == "__main__":
     logging.info("Results with best hyperparams %s", results_with_best_hyperparams)
     df = pd.DataFrame.from_dict(results_with_best_hyperparams)
     df.to_csv(path_out)
+
+
+if __name__ == "__main__":
+    main()

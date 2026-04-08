@@ -22,18 +22,19 @@ import numpy as np
 from sklearn.metrics import roc_auc_score, classification_report, accuracy_score
 
 path_to_add_to_sys = Path(__file__).resolve().parents[2]
-if str(path_to_add_to_sys) not in sys.path:
-    sys.path.insert(0, str(path_to_add_to_sys))
+src_path = path_to_add_to_sys / "src"
+if str(src_path) not in sys.path:
+    sys.path.insert(0, str(src_path))
 
-import src.qml_benchmarks.models as models
-from src.qml_benchmarks.hyperparam_search_utils import csv_to_dict, parse_hyperparameters, read_data
+import qml_benchmarks.models as models
+from qml_benchmarks.hyperparameter_search_utils import csv_to_dict, parse_hyperparameters, read_data
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 def save_current_results(results_list: list[dict], root_path: Path, output_filename: str = "benchmark_best_hyperparams.csv") -> None:
     """Save collected benchmark results to a CSV file."""
     df_out = pd.DataFrame(results_list)
-    output_dir = root_path / "paper_extension" / "results_phase1"
+    output_dir = root_path / "results" / "extension" / "phase1"
     output_dir.mkdir(parents=True, exist_ok=True)
     out_fp = output_dir / output_filename
     df_out.to_csv(out_fp, index=False)
@@ -85,22 +86,27 @@ def compute_classification_metrics(y_true: np.ndarray, y_pred: np.ndarray, y_pre
         "F1_macro": report_dict["macro avg"]["f1-score"],
     }
 
-if __name__ == "__main__":
+def main() -> None:
 
     qml_benchmarks_root = path_to_add_to_sys
 
-    hyperparameter_dir   = qml_benchmarks_root / "paper_extension" / "results_phase1" / "results"
-    data_dir = qml_benchmarks_root / "paper_extension" / "datasets_generated"
+    hyperparameter_dir = qml_benchmarks_root / "results" / "extension" / "phase1" / "results"
+    data_dir = qml_benchmarks_root / "data" / "generated" / "extension_datasets"
     all_results = []
 
     logging.info(f"Looking for hyperparam files in: {hyperparameter_dir}")
-    hp_files = list(hyperparameter_dir.glob("*-best-hyperparameters.csv"))
+    hp_files = sorted(hyperparameter_dir.glob("*-best-hyperparameters.csv"))
     logging.info(f"Found {len(hp_files)} hyperparameter files.")
 
     dataset_index = build_dataset_index(data_dir)
 
     for hp_file in hp_files:
-        classifier_name, dataset_stem = parse_hp_filename(hp_file)
+        try:
+            classifier_name, dataset_stem = parse_hp_filename(hp_file)
+        except ValueError as err:
+            logging.error("Skipping malformed hyperparameter filename '%s': %s", hp_file.name, err)
+            continue
+
         logging.info(f"Scoring {classifier_name} on {dataset_stem} (file: {hp_file.name})")
 
         dataset_files = dataset_index.get(dataset_stem, {})
@@ -146,4 +152,8 @@ if __name__ == "__main__":
                 })
             except (AttributeError, ValueError, TypeError, RuntimeError) as err:
                 logging.error("Failed %s/%s seed %s: %s", classifier_name, dataset_stem, seed, err)
-        save_current_results(all_results, qml_benchmarks_root) 
+        save_current_results(all_results, qml_benchmarks_root)
+
+
+if __name__ == "__main__":
+    main()
